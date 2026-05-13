@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="manifest" href="/manifest.json">
+    <title>Inventory Counter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, writeBatch, enableNetwork, disableNetwork } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // ============================================================
+    // FIREBASE CONFIG — Replace with your project's config
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCHjZUuwMocZvq7kHZ8BEkoNR3dt3xpwRo",
+        authDomain: "bob-inventory-7b5a0.firebaseapp.com",
+        projectId: "bob-inventory-7b5a0",
+        storageBucket: "bob-inventory-7b5a0.firebasestorage.app",
+        messagingSenderId: "963796696386",
+        appId: "1:963796696386:web:4ccfb5d9a92a6525149cdb"
+    };
+    // ============================================================
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+
+    let currentUser = null;
+    let unsubItems = null;
+    let unsubCounts = null;
+    let unsubSnapshots = null;
+    let unsubLocations = null;
+
+    let items = [];
+    let counts = {};
+    let snapshots = [];
+    let locations = [];
+    let scanLog = [];
+    let scannerInstance = null;
+    let scannerRunning = false;
+    let scanFieldTarget = null;
+
+    // --- Firestore refs ---
+    const itemsCol = () => collection(db, 'items');
+    const countsCol = () => collection(db, 'counts');
+    const snapshotsCol = () => collection(db, 'snapshots');
+    const locationsCol = () => collection(db, 'locations');
+
+    // --- Auth ---
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            renderUserHeader();
+            subscribeToData();
+        } else {
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('appScreen').style.display = 'none';
+            unsubscribeAll();
+        }
+    });
+
+    window.doLogin = async () => {
+        const email = document.getElementById('authEmail').value.trim();
+        const pass = document.getElementById('authPass').value;
+        const errEl = document.getElementById('authError');
+        errEl.textContent = '';
+        if (!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (e) {
+            errEl.textContent = friendlyError(e.code);
+        }
+    };
+
+    window.doRegister = async () => {
+        const name = document.getElementById('authName').value.trim();
+        const email = document.getElementById('authEmail').value.trim();
+        const pass = document.getElementById('authPass').value;
+        const errEl = document.getElementById('authError');
+        errEl.textContent = '';
+        if (!name) { errEl.textContent = 'Enter your name.'; return; }
+        if (!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+        if (pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+            await updateProfile(cred.user, { displayName: name });
+        } catch (e) {
+            errEl.textContent = friendlyError(e.code);
+        }
+    };
+
+    window.doLogout = async () => {
+        if (scannerRunning) stopScanner();
+        await signOut(auth);
+    };
+
+    window.toggleAuthMode = () => {
+        const nameRow = document.getElementById('authNameRow');
+        const btn = document.getElementById('authSubmitBtn');
+        const toggle = document.getElementById('authToggle');
+        if (nameRow.style.display === 'none') {
+            nameRow.style.display = 'block';
+            btn.textContent = 'Create Account';
+            btn.onclick = window.doRegister;
+            toggle.innerHTML = 'Already have an account? <a href="#" onclick="toggleAuthMode();return false;">Sign in</a>';
+        } else {
+            nameRow.style.display = 'none';
+            btn.textContent = 'Sign In';
+            btn.onclick = window.doLogin;
+            toggle.innerHTML = 'No account? <a href="#" onclick="toggleAuthMode();return false;">Create one</a>';
+        }
+        document.getElementById('authError').textContent = '';
+    };
+
+    function friendlyError(code) {
+        const map = {
+            'auth/invalid-email': 'Invalid email address.',
+            'auth/user-not-found': 'No account with that email.',
+            'auth/wrong-password': 'Incorrect password.',
+            'auth/invalid-credential': 'Invalid email or password.',
+            'auth/email-already-in-use': 'Email already registered. Try signing in.',
+            'auth/weak-password': 'Password must be at least 6 characters.',
+            'auth/too-many-requests': 'Too many attempts. Try again later.',
+        };
+        return map[code] || 'Something went wrong. Try again.';
+    }
+
+    // --- Real-time subscriptions ---
+    function subscribeToData() {
+        unsubItems = onSnapshot(query(itemsCol(), orderBy('name')), (snap) => {
+            items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            refreshCurrentTab();
+        });
+
+        unsubCounts = onSnapshot(countsCol(), (snap) => {
+            counts = {};
+            snap.docs.forEach(d => { counts[d.id] = d.data().value; });
+            refreshCurrentTab();
+        });
+
+        unsubSnapshots = onSnapshot(query(snapshotsCol(), orderBy('date', 'desc')), (snap) => {
+            snapshots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (getActiveTab() === 'history') renderHistory();
+        });
+
+        unsubLocations = onSnapshot(locationsCol(), (snap) => {
+            locations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (getActiveTab() === 'locations') renderLocations();
+        });
+    }
+
+    function unsubscribeAll() {
+        if (unsubItems) unsubItems();
+        if (unsubCounts) unsubCounts();
+        if (unsubSnapshots) unsubSnapshots();
+        if (unsubLocations) unsubLocations();
+    }
+
+    function getActiveTab() {
+        const active = document.querySelector('.tab.active');
+        return active ? active.dataset.tab : 'items';
+    }
+
+    function refreshCurrentTab() {
+        const tab = getActiveTab();
+        if (tab === 'items') renderItems();
+        else if (tab === 'count') renderCount();
+        else if (tab === 'reconcile') renderReconcile();
+        else if (tab === 'locations') renderLocations();
+        else if (tab === 'history') renderHistory();
+    }
+
+    // --- Toast ---
+    window.toast = (msg, type = 'info') => {
+        const c = document.getElementById('toastContainer');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+    };
+
+    // --- Tabs ---
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+        document.querySelectorAll('#appMain > section').forEach(s => s.classList.add('section-hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('section-hidden');
+        if (scannerRunning && tab !== 'scan') stopScanner();
+        refreshCurrentTab();
+    };
+
+    // --- Helpers ---
+    function esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getCategories() {
+        return [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    }
+
+    function getAllLocations() {
+        const fromItems = items.map(i => i.location).filter(Boolean);
+        const fromManaged = locations.map(l => l.name);
+        return [...new Set([...fromItems, ...fromManaged])].sort();
+    }
+
+    function updateFilters() {
+        const cats = getCategories();
+        const locs = getAllLocations();
+        ['filterCategory', 'filterCountCategory'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const val = sel.value;
+            sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}">${esc(c)}</option>`).join('');
+            sel.value = val;
+        });
+        ['filterLocation', 'filterCountLocation', 'filterReconcileLocation'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const val = sel.value;
+            sel.innerHTML = '<option value="">All Locations</option>' + locs.map(l => `<option value="${l}">${esc(l)}</option>`).join('');
+            sel.value = val;
+        });
+        const catList = document.getElementById('categoryList');
+        if (catList) catList.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+        const locList = document.getElementById('locationList');
+        if (locList) locList.innerHTML = locs.map(l => `<option value="${l}">`).join('');
+    }
+
+    function renderUserHeader() {
+        if (!currentUser) return;
+        const name = currentUser.displayName || currentUser.email;
+        document.getElementById('headerAvatar').textContent = name.charAt(0).toUpperCase();
+        document.getElementById('headerUserName').textContent = name;
+    }
+
+    // --- Items ---
+    function filterItems() {
+        const search = document.getElementById('searchItems').value.toLowerCase();
+        const cat = document.getElementById('filterCategory').value;
+        const loc = document.getElementById('filterLocation').value;
+        return items.filter(item => {
+            if (cat && item.category !== cat) return false;
+            if (loc && item.location !== loc) return false;
+            if (search && !`${item.name} ${item.sku} ${item.barcode || ''} ${item.category} ${item.location}`.toLowerCase().includes(search)) return false;
+            return true;
+        });
+    }
+
+    window.renderItems = () => {
+        updateFilters();
+        const filtered = filterItems();
+        const body = document.getElementById('itemsBody');
+        const empty = document.getElementById('itemsEmpty');
+        if (filtered.length === 0) {
+            body.innerHTML = '';
+            empty.classList.remove('section-hidden');
+            return;
+        }
+        empty.classList.add('section-hidden');
+        body.innerHTML = filtered.map(item => `
+            <tr>
+                <td><strong>${esc(item.name)}</strong></td>
+                <td>${esc(item.sku || '')}</td>
+                <td style="font-family:monospace;font-size:12px;">${esc(item.barcode || '-')}</td>
+                <td>${esc(item.category || '')}</td>
+                <td>${esc(item.location || '')}</td>
+                <td>${item.expected || 0}</td>
+                <td>
+                    <button class="btn btn-sm" onclick="openItemModal('${item.id}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    };
+
+    window.openItemModal = (id) => {
+        if (id) {
+            const item = items.find(i => i.id === id);
+            document.getElementById('modalTitle').textContent = 'Edit Item';
+            document.getElementById('editItemId').value = id;
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('itemSku').value = item.sku || '';
+            document.getElementById('itemBarcode').value = item.barcode || '';
+            document.getElementById('itemCategory').value = item.category || '';
+            document.getElementById('itemLocation').value = item.location || '';
+            document.getElementById('itemExpected').value = item.expected || 0;
+        } else {
+            document.getElementById('modalTitle').textContent = 'Add Item';
+            document.getElementById('editItemId').value = '';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemSku').value = '';
+            document.getElementById('itemBarcode').value = '';
+            document.getElementById('itemCategory').value = '';
+            document.getElementById('itemLocation').value = '';
+            document.getElementById('itemExpected').value = '';
+        }
+        document.getElementById('itemModal').classList.add('open');
+        document.getElementById('itemName').focus();
+    };
+
+    window.saveItem = async () => {
+        const id = document.getElementById('editItemId').value || crypto.randomUUID();
+        const name = document.getElementById('itemName').value.trim();
+        if (!name) { document.getElementById('itemName').focus(); return; }
+        const item = {
+            name,
+            sku: document.getElementById('itemSku').value.trim(),
+            barcode: document.getElementById('itemBarcode').value.trim(),
+            category: document.getElementById('itemCategory').value.trim(),
+            location: document.getElementById('itemLocation').value.trim(),
+            expected: parseFloat(document.getElementById('itemExpected').value) || 0,
+            updatedBy: currentUser.displayName || currentUser.email,
+            updatedAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'items', id), item);
+        closeModal('itemModal');
+        toast(document.getElementById('editItemId').value ? 'Item updated' : 'Item added', 'success');
+    };
+
+    window.deleteItem = async (id) => {
+        if (!confirm('Delete this item?')) return;
+        await deleteDoc(doc(db, 'items', id));
+        await deleteDoc(doc(db, 'counts', id));
+        toast('Item deleted', 'info');
+    };
+
+    // --- Count ---
+    function filterCountItems() {
+        const search = document.getElementById('searchCount').value.toLowerCase();
+        const cat = document.getElementById('filterCountCategory').value;
+        const loc = document.getElementById('filterCountLocation').value;
+        return items.filter(item => {
+            if (cat && item.category !== cat) return false;
+            if (loc && item.location !== loc) return false;
+            if (search && !`${item.name} ${item.sku} ${item.category} ${item.location}`.toLowerCase().includes(search)) return false;
+            return true;
+        });
+    }
+
+    window.renderCount = () => {
+        updateFilters();
+        const filtered = filterCountItems();
+        const body = document.getElementById('countBody');
+        const empty = document.getElementById('countEmpty');
+        if (filtered.length === 0) {
+            body.innerHTML = '';
+            empty.classList.remove('section-hidden');
+            return;
+        }
+        empty.classList.add('section-hidden');
+        body.innerHTML = filtered.map(item => {
+            const val = counts[item.id] !== undefined ? counts[item.id] : '';
+            return `
+            <tr>
+                <td><strong>${esc(item.name)}</strong></td>
+                <td>${esc(item.sku || '')}</td>
+                <td>${esc(item.category || '')}</td>
+                <td>${esc(item.location || '')}</td>
+                <td>${item.expected || 0}</td>
+                <td><input class="count-input" type="number" min="0" step="0.01"
+                    value="${val}" data-id="${item.id}"
+                    onchange="updateCount('${item.id}', this.value)"></td>
+            </tr>`;
+        }).join('');
+    };
+
+    window.updateCount = async (id, val) => {
+        if (val === '' || val === null || val === undefined) {
+            await deleteDoc(doc(db, 'counts', id));
+        } else {
+            await setDoc(doc(db, 'counts', id), {
+                value: parseFloat(val),
+                updatedBy: currentUser.displayName || currentUser.email,
+                updatedAt: new Date().toISOString()
+            });
+        }
+    };
+
+    window.saveCountsAsSnapshot = async () => {
+        // Save any unsaved inputs first
+        const inputs = document.querySelectorAll('.count-input');
+        const batch = writeBatch(db);
+        inputs.forEach(input => {
+            const id = input.dataset.id;
+            const val = input.value;
+            if (val === '') {
+                batch.delete(doc(db, 'counts', id));
+            } else {
+                batch.set(doc(db, 'counts', id), {
+                    value: parseFloat(val),
+                    updatedBy: currentUser.displayName || currentUser.email,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+        });
+        await batch.commit();
+
+        // Recompute counts from inputs
+        const currentCounts = {};
+        inputs.forEach(input => {
+            if (input.value !== '') currentCounts[input.dataset.id] = parseFloat(input.value);
+        });
+        // Also include counts not currently visible
+        Object.keys(counts).forEach(id => {
+            if (currentCounts[id] === undefined) currentCounts[id] = counts[id];
+        });
+
+        const snapshot = {
+            date: new Date().toISOString(),
+            user: currentUser.displayName || currentUser.email,
+            counts: currentCounts,
+            itemSnapshot: items.map(i => ({ id: i.id, name: i.name, sku: i.sku || '', location: i.location || '', expected: i.expected || 0 })),
+            stats: computeStats(currentCounts)
+        };
+        await setDoc(doc(db, 'snapshots', crypto.randomUUID()), snapshot);
+        toast('Snapshot saved!', 'success');
+    };
+
+    function computeStats(countsObj) {
+        let matched = 0, short = 0, over = 0, uncounted = 0;
+        items.forEach(item => {
+            const c = countsObj !== undefined ? countsObj[item.id] : counts[item.id];
+            if (c === undefined) uncounted++;
+            else if (c === (item.expected || 0)) matched++;
+            else if (c < (item.expected || 0)) short++;
+            else over++;
+        });
+        return { matched, short, over, uncounted, total: items.length };
+    }
+
+    window.clearCounts = async () => {
+        if (!confirm('Clear all current counts? (Saved snapshots are preserved.)')) return;
+        const snap = await getDocs(countsCol());
+        const batch = writeBatch(db);
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        toast('Counts cleared', 'info');
+    };
+
+    // --- Barcode ---
+    window.toggleScanner = () => {
+        if (scannerRunning) stopScanner();
+        else startScanner();
+    };
+
+    function startScanner() {
+        const container = document.getElementById('scannerContainer');
+        container.style.display = 'block';
+        document.getElementById('startScanBtn').textContent = 'Stop Scanner';
+        scannerInstance = new Html5Qrcode('scannerContainer');
+        scannerInstance.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.QR_CODE
+            ]},
+            (decodedText) => { processBarcode(decodedText); },
+            () => {}
+        ).then(() => { scannerRunning = true; })
+        .catch(() => {
+            container.style.display = 'none';
+            document.getElementById('startScanBtn').textContent = 'Start Scanner';
+            toast('Camera access denied or not available', 'error');
+        });
+    }
+
+    function stopScanner() {
+        if (scannerInstance && scannerRunning) {
+            scannerInstance.stop().then(() => {
+                scannerInstance.clear();
+                scannerRunning = false;
+                document.getElementById('scannerContainer').style.display = 'none';
+                document.getElementById('startScanBtn').textContent = 'Start Scanner';
+            }).catch(() => {});
+        }
+    }
+
+    window.processBarcode = async (code) => {
+        code = (code || '').trim();
+        if (!code) return;
+        document.getElementById('manualBarcode').value = '';
+
+        if (scanFieldTarget) {
+            document.getElementById(scanFieldTarget).value = code;
+            scanFieldTarget = null;
+            toast(`Barcode captured: ${code}`, 'success');
+            return;
+        }
+
+        const item = items.find(i => i.barcode === code || i.sku === code);
+        const mode = document.getElementById('scanMode').value;
+        const resultDiv = document.getElementById('scanResult');
+
+        if (!item) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="scan-result" style="border-color:var(--yellow);">
+                    <div><strong>Unknown barcode: ${esc(code)}</strong><br>
+                    <span style="color:var(--text-muted);font-size:13px;">No matching item found.</span></div>
+                    <button class="btn btn-sm btn-primary" onclick="openItemModalWithBarcode('${esc(code)}')">Add Item</button>
+                </div>`;
+            toast(`Unknown barcode: ${code}`, 'error');
+            return;
+        }
+
+        if (mode === 'count') {
+            const current = counts[item.id] || 0;
+            const newVal = current + 1;
+            await setDoc(doc(db, 'counts', item.id), {
+                value: newVal,
+                updatedBy: currentUser.displayName || currentUser.email,
+                updatedAt: new Date().toISOString()
+            });
+            scanLog.unshift({ time: new Date(), item: item.name, barcode: code, newCount: newVal });
+            if (scanLog.length > 100) scanLog = scanLog.slice(0, 100);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="scan-result">
+                    <div><strong>${esc(item.name)}</strong><br>
+                    <span style="color:var(--text-muted);font-size:13px;">Count: ${current} &rarr; ${newVal} (expected: ${item.expected || 0})</span></div>
+                    <span class="badge ${newVal === (item.expected||0) ? 'badge-green' : newVal < (item.expected||0) ? 'badge-yellow' : 'badge-red'}">
+                        ${newVal === (item.expected||0) ? 'Match' : newVal < (item.expected||0) ? 'Short' : 'Over'}</span>
+                </div>`;
+            toast(`+1 ${item.name} (now ${newVal})`, 'success');
+        } else {
+            const counted = counts[item.id];
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="scan-result">
+                    <div><strong>${esc(item.name)}</strong><br>
+                    <span style="color:var(--text-muted);font-size:13px;">SKU: ${esc(item.sku||'')} | Location: ${esc(item.location||'')} | Expected: ${item.expected||0}${counted !== undefined ? ' | Counted: ' + counted : ''}</span></div>
+                    <button class="btn btn-sm" onclick="openItemModal('${item.id}')">Edit</button>
+                </div>`;
+        }
+        renderScanLog();
+    };
+
+    function renderScanLog() {
+        const logDiv = document.getElementById('scanLog');
+        const body = document.getElementById('scanLogBody');
+        if (scanLog.length === 0) { logDiv.style.display = 'none'; return; }
+        logDiv.style.display = 'block';
+        body.innerHTML = scanLog.slice(0, 20).map(entry => `
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+                <span>${esc(entry.item)}</span>
+                <span style="color:var(--text-muted);">Count: ${entry.newCount} &bull; ${new Date(entry.time).toLocaleTimeString()}</span>
+            </div>`).join('');
+    }
+
+    window.openItemModalWithBarcode = (barcode) => {
+        openItemModal();
+        document.getElementById('itemBarcode').value = barcode;
+    };
+
+    window.scanForField = (fieldId) => {
+        scanFieldTarget = fieldId;
+        switchTab('scan');
+        if (!scannerRunning) startScanner();
+        toast('Scan a barcode to fill the field', 'info');
+    };
+
+    // --- Locations ---
+    window.openLocationModal = () => {
+        document.getElementById('newLocationName').value = '';
+        document.getElementById('newLocationDesc').value = '';
+        document.getElementById('locationModal').classList.add('open');
+    };
+
+    window.addLocation = async () => {
+        const name = document.getElementById('newLocationName').value.trim();
+        const desc = document.getElementById('newLocationDesc').value.trim();
+        if (!name) return;
+        if (locations.find(l => l.name.toLowerCase() === name.toLowerCase())) {
+            toast('Location already exists', 'error'); return;
+        }
+        await setDoc(doc(db, 'locations', crypto.randomUUID()), { name, description: desc });
+        closeModal('locationModal');
+        toast(`Location "${name}" added`, 'success');
+    };
+
+    window.renderLocations = () => {
+        const grid = document.getElementById('locationsGrid');
+        const allLocs = getAllLocations();
+        if (allLocs.length === 0) {
+            grid.innerHTML = '<div class="empty-state"><p><strong>No locations</strong></p><p>Add a location to organize your inventory.</p></div>';
+            return;
+        }
+        grid.innerHTML = allLocs.map(loc => {
+            const locItems = items.filter(i => i.location === loc);
+            const counted = locItems.filter(i => counts[i.id] !== undefined).length;
+            const managed = locations.find(l => l.name === loc);
+            return `
+            <div class="location-card" onclick="openLocationDetail('${esc(loc).replace(/'/g, "\\'")}')">
+                <div>
+                    <div class="loc-name">${esc(loc)}</div>
+                    ${managed && managed.description ? `<div style="font-size:12px;color:var(--text-muted);">${esc(managed.description)}</div>` : ''}
+                </div>
+                <div style="text-align:right;">
+                    <div class="loc-count">${locItems.length} items</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${counted}/${locItems.length} counted</div>
+                </div>
+            </div>`;
+        }).join('');
+    };
+
+    window.openLocationDetail = (loc) => {
+        document.getElementById('locationsGrid').style.display = 'none';
+        document.getElementById('locationDetail').style.display = 'block';
+        document.getElementById('locationDetailName').textContent = loc;
+        const locItems = items.filter(i => i.location === loc);
+        document.getElementById('locationDetailBody').innerHTML = locItems.map(item => {
+            const counted = counts[item.id];
+            return `<tr>
+                <td><strong>${esc(item.name)}</strong></td>
+                <td>${esc(item.sku || '')}</td>
+                <td>${esc(item.category || '')}</td>
+                <td>${item.expected || 0}</td>
+                <td>${counted !== undefined ? counted : '<span style="color:var(--text-muted)">-</span>'}</td>
+            </tr>`;
+        }).join('');
+    };
+
+    window.closeLocationDetail = () => {
+        document.getElementById('locationsGrid').style.display = '';
+        document.getElementById('locationDetail').style.display = 'none';
+    };
+
+    // --- Reconcile ---
+    window.renderReconcile = () => {
+        updateFilters();
+        const search = document.getElementById('searchReconcile').value.toLowerCase();
+        const filter = document.getElementById('filterVariance').value;
+        const locFilter = document.getElementById('filterReconcileLocation').value;
+        const stats = { total: 0, matched: 0, short: 0, over: 0, uncounted: 0, totalVariance: 0 };
+
+        let list = items.map(item => {
+            const counted = counts[item.id];
+            const hasCounted = counted !== undefined;
+            const actual = hasCounted ? counted : null;
+            const expected = item.expected || 0;
+            const variance = hasCounted ? actual - expected : null;
+            stats.total++;
+            if (!hasCounted) stats.uncounted++;
+            else if (variance === 0) stats.matched++;
+            else if (variance < 0) { stats.short++; stats.totalVariance += variance; }
+            else { stats.over++; stats.totalVariance += variance; }
+            return { ...item, actual, variance, hasCounted, expected };
+        });
+
+        document.getElementById('reconcileStats').innerHTML = `
+            <div class="stat-card"><div class="label">Total Items</div><div class="value">${stats.total}</div></div>
+            <div class="stat-card"><div class="label">Matched</div><div class="value variance-pos">${stats.matched}</div></div>
+            <div class="stat-card"><div class="label">Short</div><div class="value variance-neg">${stats.short}</div></div>
+            <div class="stat-card"><div class="label">Over</div><div class="value" style="color:var(--yellow)">${stats.over}</div></div>
+            <div class="stat-card"><div class="label">Uncounted</div><div class="value" style="color:var(--cyan)">${stats.uncounted}</div></div>
+            <div class="stat-card"><div class="label">Net Variance</div><div class="value ${stats.totalVariance < 0 ? 'variance-neg' : stats.totalVariance > 0 ? 'variance-pos' : 'variance-zero'}">${stats.totalVariance > 0 ? '+' : ''}${stats.totalVariance}</div></div>
+        `;
+
+        list = list.filter(item => {
+            if (locFilter && item.location !== locFilter) return false;
+            if (filter === 'short' && !(item.hasCounted && item.variance < 0)) return false;
+            if (filter === 'over' && !(item.hasCounted && item.variance > 0)) return false;
+            if (filter === 'match' && !(item.hasCounted && item.variance === 0)) return false;
+            if (filter === 'uncounted' && item.hasCounted) return false;
+            if (search && !`${item.name} ${item.sku} ${item.category} ${item.location}`.toLowerCase().includes(search)) return false;
+            return true;
+        });
+
+        const body = document.getElementById('reconcileBody');
+        const empty = document.getElementById('reconcileEmpty');
+        if (list.length === 0 && items.length === 0) {
+            body.innerHTML = '';
+            empty.classList.remove('section-hidden');
+            return;
+        }
+        empty.classList.add('section-hidden');
+        body.innerHTML = list.map(item => {
+            let varianceText = '-', varianceClass = 'variance-zero';
+            let badge = '<span class="badge badge-cyan">Uncounted</span>';
+            if (item.hasCounted) {
+                varianceText = (item.variance > 0 ? '+' : '') + item.variance;
+                if (item.variance < 0) { varianceClass = 'variance-neg'; badge = '<span class="badge badge-red">Short</span>'; }
+                else if (item.variance > 0) { varianceClass = 'variance-pos'; badge = '<span class="badge badge-yellow">Over</span>'; }
+                else { badge = '<span class="badge badge-green">Match</span>'; }
+            }
+            return `<tr>
+                <td><strong>${esc(item.name)}</strong></td>
+                <td>${esc(item.sku || '')}</td>
+                <td>${esc(item.category || '')}</td>
+                <td>${esc(item.location || '')}</td>
+                <td>${item.expected}</td>
+                <td>${item.hasCounted ? item.actual : '-'}</td>
+                <td class="${varianceClass}">${varianceText}</td>
+                <td>${badge}</td>
+            </tr>`;
+        }).join('');
+    };
+
+    // --- History ---
+    window.renderHistory = () => {
+        const list = document.getElementById('historyList');
+        const empty = document.getElementById('historyEmpty');
+        document.getElementById('snapshotModal').classList.remove('open');
+
+        if (snapshots.length === 0) {
+            list.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        list.innerHTML = snapshots.map(snap => `
+            <div class="history-item">
+                <div class="history-meta">
+                    <div class="date">${fmtDate(snap.date)}</div>
+                    <div class="info">By ${esc(snap.user)} &bull; ${snap.stats.total} items &bull; ${snap.stats.matched} matched, ${snap.stats.short} short, ${snap.stats.over} over</div>
+                </div>
+                <div class="history-actions">
+                    <button class="btn btn-sm" onclick="viewSnapshot('${snap.id}')">View</button>
+                    <button class="btn btn-sm btn-success" onclick="restoreSnapshot('${snap.id}')">Restore</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSnapshot('${snap.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.viewSnapshot = (id) => {
+        const snap = snapshots.find(s => s.id === id);
+        if (!snap) return;
+        document.getElementById('snapshotModalTitle').textContent = `Snapshot: ${fmtDate(snap.date)} by ${snap.user}`;
+        document.getElementById('snapshotModalBody').innerHTML = (snap.itemSnapshot || []).map(item => {
+            const counted = snap.counts[item.id];
+            const hasCounted = counted !== undefined;
+            const variance = hasCounted ? counted - (item.expected || 0) : null;
+            let badge = '<span class="badge badge-cyan">Uncounted</span>';
+            let varianceClass = 'variance-zero';
+            if (hasCounted) {
+                if (variance < 0) { varianceClass = 'variance-neg'; badge = '<span class="badge badge-red">Short</span>'; }
+                else if (variance > 0) { varianceClass = 'variance-pos'; badge = '<span class="badge badge-yellow">Over</span>'; }
+                else { badge = '<span class="badge badge-green">Match</span>'; }
+            }
+            return `<tr>
+                <td><strong>${esc(item.name)}</strong></td><td>${esc(item.sku || '')}</td><td>${esc(item.location || '')}</td>
+                <td>${item.expected || 0}</td><td>${hasCounted ? counted : '-'}</td>
+                <td class="${varianceClass}">${hasCounted ? (variance > 0 ? '+' : '') + variance : '-'}</td>
+                <td>${badge}</td></tr>`;
+        }).join('');
+        document.getElementById('snapshotModal').classList.add('open');
+    };
+
+    window.restoreSnapshot = async (id) => {
+        const snap = snapshots.find(s => s.id === id);
+        if (!snap || !confirm(`Restore counts from ${fmtDate(snap.date)}? This will overwrite current counts.`)) return;
+        // Clear existing
+        const existing = await getDocs(countsCol());
+        const batch = writeBatch(db);
+        existing.docs.forEach(d => batch.delete(d.ref));
+        // Write restored
+        Object.entries(snap.counts).forEach(([itemId, value]) => {
+            batch.set(doc(db, 'counts', itemId), {
+                value,
+                updatedBy: currentUser.displayName || currentUser.email,
+                updatedAt: new Date().toISOString()
+            });
+        });
+        await batch.commit();
+        toast('Counts restored from snapshot', 'success');
+    };
+
+    window.deleteSnapshot = async (id) => {
+        if (!confirm('Delete this snapshot?')) return;
+        await deleteDoc(doc(db, 'snapshots', id));
+        toast('Snapshot deleted', 'info');
+    };
+
+    // --- Print ---
+    window.printReport = () => {
+        document.getElementById('printDate').textContent = `Generated: ${new Date().toLocaleString()}`;
+        document.getElementById('printUser').textContent = currentUser ? `By: ${currentUser.displayName || currentUser.email}` : '';
+        document.querySelectorAll('#appMain > section').forEach(s => s.classList.add('section-hidden'));
+        document.getElementById('tab-reconcile').classList.remove('section-hidden');
+        window.print();
+    };
+
+    // --- CSV ---
+    window.exportCSV = () => {
+        const rows = [['Name', 'SKU', 'Barcode', 'Category', 'Location', 'Expected', 'Actual', 'Variance']];
+        items.forEach(item => {
+            const actual = counts[item.id];
+            const variance = actual !== undefined ? actual - (item.expected || 0) : '';
+            rows.push([item.name, item.sku || '', item.barcode || '', item.category || '', item.location || '', item.expected || 0, actual !== undefined ? actual : '', variance]);
+        });
+        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click(); URL.revokeObjectURL(url);
+    };
+
+    window.importCSV = () => { document.getElementById('csvFileInput').click(); };
+
+    window.handleCSVImport = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { toast('CSV is empty', 'error'); return; }
+        const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+        const nameIdx = header.findIndex(h => h.includes('name'));
+        const skuIdx = header.findIndex(h => h.includes('sku') || h.includes('code'));
+        const barcodeIdx = header.findIndex(h => h.includes('barcode') || h.includes('upc') || h.includes('ean'));
+        const catIdx = header.findIndex(h => h.includes('categ'));
+        const locIdx = header.findIndex(h => h.includes('loc'));
+        const expIdx = header.findIndex(h => h.includes('expect') || h.includes('qty') || h.includes('quantity'));
+        if (nameIdx === -1) { toast('CSV must have a "Name" column', 'error'); return; }
+        let imported = 0;
+        const batch = writeBatch(db);
+        for (let i = 1; i < lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+            const name = (cols[nameIdx] || '').trim();
+            if (!name) continue;
+            const id = crypto.randomUUID();
+            batch.set(doc(db, 'items', id), {
+                name,
+                sku: skuIdx >= 0 ? (cols[skuIdx] || '').trim() : '',
+                barcode: barcodeIdx >= 0 ? (cols[barcodeIdx] || '').trim() : '',
+                category: catIdx >= 0 ? (cols[catIdx] || '').trim() : '',
+                location: locIdx >= 0 ? (cols[locIdx] || '').trim() : '',
+                expected: expIdx >= 0 ? (parseFloat(cols[expIdx]) || 0) : 0,
+                updatedBy: currentUser.displayName || currentUser.email,
+                updatedAt: new Date().toISOString()
+            });
+            imported++;
+            if (imported % 400 === 0) { await batch.commit(); }
+        }
+        await batch.commit();
+        toast(`Imported ${imported} items`, 'success');
+        event.target.value = '';
+    };
+
+    function parseCSVLine(line) {
+        const result = []; let current = ''; let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (inQuotes) {
+                if (ch === '"' && line[i + 1] === '"') { current += '"'; i++; }
+                else if (ch === '"') inQuotes = false;
+                else current += ch;
+            } else {
+                if (ch === '"') inQuotes = true;
+                else if (ch === ',') { result.push(current); current = ''; }
+                else current += ch;
+            }
+        }
+        result.push(current); return result;
+    }
+
+    // --- Modal close ---
+    window.closeModal = (id) => { document.getElementById(id).classList.remove('open'); };
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+        if (e.key === 'Enter' && document.getElementById('itemModal').classList.contains('open')) saveItem();
+    });
+
+    // Enter key on auth
+    document.getElementById('authPass').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('authSubmitBtn').click();
+    });
+
+    // --- Online/Offline status ---
+    function updateOnlineStatus() {
+        const badge = document.getElementById('connectionBadge');
+        if (!badge) return;
+        if (navigator.onLine) {
+            badge.className = 'conn-badge conn-online';
+            badge.innerHTML = '<span class="conn-dot"></span> Online';
+            enableNetwork(db).catch(() => {});
+        } else {
+            badge.className = 'conn-badge conn-offline';
+            badge.innerHTML = '<span class="conn-dot"></span> Offline';
+        }
+    }
+    window.addEventListener('online', () => { updateOnlineStatus(); toast('Back online — syncing changes...', 'success'); });
+    window.addEventListener('offline', () => { updateOnlineStatus(); toast('You are offline — changes saved locally', 'info'); });
+    updateOnlineStatus();
+
+    // --- Service Worker ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e; --surface3: #282828;
+            --border: #2a2a2a; --border-light: #3a3a3a;
+            --text: #f0e6d6; --text-muted: #9a8e7e; --text-bright: #fff;
+            --orange: #e8740c; --orange-bright: #ff8c1a; --orange-dim: #c45f00; --orange-glow: rgba(232,116,12,0.15);
+            --tan: #c4a46c; --tan-light: #d4bb8a; --tan-dim: #8a7550;
+            --green: #5cb85c; --red: #d9534f; --yellow: #f0ad4e; --cyan: #5bc0de;
+        }
+        body { font-family: 'Raleway', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* Auth */
+        #authScreen {
+            display: flex; align-items: center; justify-content: center; min-height: 100vh;
+            background: linear-gradient(160deg, #0a0a0a 0%, #1a1208 40%, #0a0a0a 100%);
+        }
+        .auth-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+            padding: 44px 40px; width: 90%; max-width: 420px; text-align: center;
+            box-shadow: 0 0 80px rgba(232,116,12,0.08), 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .auth-card h1 { font-size: 28px; margin-bottom: 6px; color: var(--orange-bright); font-weight: 700; letter-spacing: -0.5px; }
+        .auth-card p { color: var(--tan); font-size: 14px; margin-bottom: 28px; }
+        .auth-card .form-group { text-align: left; }
+        .auth-error { color: var(--red); font-size: 13px; min-height: 20px; margin-top: 8px; }
+        .auth-toggle { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
+        .auth-toggle a { color: var(--orange); text-decoration: none; font-weight: 500; }
+        .auth-toggle a:hover { color: var(--orange-bright); }
+
+        #appScreen { display: none; }
+        header {
+            background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+            border-bottom: 1px solid var(--border); padding: 14px 24px;
+            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        header h1 { font-size: 22px; font-weight: 700; color: var(--orange-bright); letter-spacing: -0.5px; }
+        .user-switcher { display: flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 20px; background: var(--surface2); border: 1px solid var(--border); font-size: 13px; color: var(--tan-light); }
+        .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--orange), var(--orange-dim)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .tabs { display: flex; gap: 4px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; }
+        .tab { padding: 9px 22px; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
+        .tab:hover { color: var(--tan-light); background: var(--surface2); }
+        .tab.active { color: #fff; background: linear-gradient(135deg, var(--orange), var(--orange-dim)); box-shadow: 0 2px 12px rgba(232,116,12,0.3); }
+
+        main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-light); background: var(--surface2); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .btn:hover { border-color: var(--tan); color: var(--text-bright); background: var(--surface3); }
+        .btn-primary { background: linear-gradient(135deg, var(--orange), var(--orange-dim)); border-color: var(--orange); color: #fff; font-weight: 600; }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--orange-bright), var(--orange)); box-shadow: 0 2px 12px rgba(232,116,12,0.3); }
+        .btn-danger { color: var(--red); border-color: var(--border-light); }
+        .btn-danger:hover { background: rgba(217,83,79,0.1); border-color: var(--red); }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-success { background: var(--green); border-color: var(--green); color: #fff; }
+        .btn-success:hover { background: #4a9e4a; }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--tan-light); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--tan); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--orange-glow); }
+
+        .variance-pos { color: var(--green); } .variance-neg { color: var(--red); } .variance-zero { color: var(--text-muted); }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+        .badge-green { background: rgba(92,184,92,0.15); color: var(--green); }
+        .badge-red { background: rgba(217,83,79,0.15); color: var(--red); }
+        .badge-yellow { background: rgba(240,173,78,0.15); color: var(--yellow); }
+        .badge-cyan { background: rgba(91,192,222,0.15); color: var(--cyan); }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--surface); border: 1px solid var(--border-light); border-radius: 16px; padding: 28px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        .modal-lg { max-width: 700px; }
+        .modal h3 { font-size: 18px; margin-bottom: 20px; color: var(--orange-bright); }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--tan); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232,116,12,0.12); }
+        .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.2s; }
+        .stat-card:hover { border-color: var(--border-light); }
+        .stat-card .label { font-size: 11px; color: var(--tan); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+        .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; color: var(--text-bright); }
+
+        .search-bar { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 14px; outline: none; width: 260px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .search-bar:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232,116,12,0.12); }
+        .search-bar::placeholder { color: var(--text-muted); }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .toolbar-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .empty-state p { margin-top: 8px; font-size: 14px; }
+        .count-input { width: 80px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 14px; text-align: center; outline: none; transition: border-color 0.2s; }
+        .count-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232,116,12,0.12); }
+        .section-hidden { display: none; }
+
+        #scannerContainer { width: 100%; max-width: 400px; margin: 0 auto 16px; border-radius: 12px; overflow: hidden; border: 2px solid var(--orange); }
+        .scan-result { background: var(--surface2); border: 1px solid var(--orange); border-radius: 8px; padding: 12px 16px; margin: 12px auto; display: flex; justify-content: space-between; align-items: center; max-width: 500px; }
+
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
+        .history-item:last-child { border-bottom: none; }
+        .history-meta { display: flex; flex-direction: column; gap: 2px; }
+        .history-meta .date { font-weight: 600; font-size: 14px; color: var(--tan-light); }
+        .history-meta .info { font-size: 12px; color: var(--text-muted); }
+        .history-actions { display: flex; gap: 6px; }
+
+        .location-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .location-card:hover { border-color: var(--orange); background: var(--orange-glow); }
+        .location-card .loc-name { font-weight: 600; color: var(--tan-light); }
+        .table-scroll { overflow-x: auto; }
+
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: var(--surface); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 20px; font-size: 14px; animation: slideIn 0.25s ease; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        .toast-success { border-left: 3px solid var(--green); }
+        .toast-error { border-left: 3px solid var(--red); }
+        .toast-info { border-left: 3px solid var(--orange); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .conn-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.3px; }
+        .conn-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+        .conn-online { background:rgba(92,184,92,0.12); color:var(--green); border:1px solid rgba(92,184,92,0.25); }
+        .conn-online .conn-dot { background:var(--green); box-shadow:0 0 6px var(--green); }
+        .conn-offline { background:rgba(232,116,12,0.12); color:var(--orange-bright); border:1px solid rgba(232,116,12,0.25); }
+        .conn-offline .conn-dot { background:var(--orange-bright); box-shadow:0 0 6px var(--orange); animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        .print-header { display: none; }
+        @media print {
+            body { background: #fff; color: #000; }
+            #authScreen, header, .tabs, .toolbar, .btn, .no-print { display: none !important; }
+            main { max-width: 100%; padding: 0; }
+            .card { border: 1px solid #ddd; } .stat-card { border: 1px solid #ddd; }
+            .stat-card .value { color: #000; } .badge { border: 1px solid #999; }
+            table { font-size: 12px; } th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+            .variance-pos { color: #16a34a; } .variance-neg { color: #dc2626; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-header h2 { font-size: 22px; margin-bottom: 4px; } .print-header p { color: #666; font-size: 13px; }
+            .section-hidden { display: none !important; }
+        }
+        @media (max-width: 700px) {
+            main { padding: 16px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-bar { width: 100%; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            header { flex-wrap: wrap; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div style="background:#0D1B2A;display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1.5rem;font-family:'Raleway','Segoe UI',sans-serif;">
+  <span style="color:#fff;font-weight:700;font-size:0.95rem;letter-spacing:0.5px;">BOB Staff Hub</span>
+  <div style="display:flex;gap:0.3rem;">
+    <a href="index.html" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.8rem;font-weight:600;padding:0.35rem 0.9rem;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">Events</a>
+    <a href="inventory.html" style="color:#FFB81C;text-decoration:none;font-size:0.8rem;font-weight:600;padding:0.35rem 0.9rem;border-radius:6px;background:rgba(255,184,28,0.15);text-transform:uppercase;letter-spacing:0.5px;">Inventory</a>
+  </div>
+</div>
+
+    <!-- AUTH SCREEN -->
+    <div id="authScreen">
+        <div class="auth-card">
+            <h1>Inventory Counter</h1>
+            <p>Sign in to access your team's inventory</p>
+            <div class="form-group" id="authNameRow" style="display:none;">
+                <label>Your Name</label>
+                <input type="text" id="authName" placeholder="e.g. John Smith">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="authEmail" placeholder="you@company.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="authPass" placeholder="Password">
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" id="authSubmitBtn" onclick="doLogin()">Sign In</button>
+            <div class="auth-error" id="authError"></div>
+            <div class="auth-toggle" id="authToggle">No account? <a href="#" onclick="toggleAuthMode();return false;">Create one</a></div>
+        </div>
+    </div>
+
+    <!-- APP SCREEN -->
+    <div id="appScreen">
+        <header>
+            <div class="header-left">
+                <h1>Inventory Counter</h1>
+                <div class="user-switcher">
+                    <div class="user-avatar" id="headerAvatar">?</div>
+                    <span id="headerUserName">User</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="conn-badge conn-online" id="connectionBadge"><span class="conn-dot"></span> Online</div>
+                <button class="btn" onclick="exportCSV()">Export CSV</button>
+                <button class="btn" onclick="importCSV()">Import CSV</button>
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
+                <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="items" onclick="switchTab('items')">Items</button>
+            <button class="tab" data-tab="count" onclick="switchTab('count')">Count</button>
+            <button class="tab" data-tab="scan" onclick="switchTab('scan')">Scan</button>
+            <button class="tab" data-tab="locations" onclick="switchTab('locations')">Locations</button>
+            <button class="tab" data-tab="reconcile" onclick="switchTab('reconcile')">Reconcile</button>
+            <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+        </div>
+
+        <main id="appMain">
+            <!-- ITEMS -->
+            <section id="tab-items">
+                <div class="toolbar">
+                    <input class="search-bar" type="text" placeholder="Search items..." id="searchItems" oninput="renderItems()">
+                    <div class="toolbar-group">
+                        <select id="filterCategory" class="btn" onchange="renderItems()"><option value="">All Categories</option></select>
+                        <select id="filterLocation" class="btn" onchange="renderItems()"><option value="">All Locations</option></select>
+                        <button class="btn btn-primary" onclick="openItemModal()">+ Add Item</button>
+                    </div>
+                </div>
+                <div class="card"><div class="table-scroll">
+                    <table><thead><tr><th>Name</th><th>SKU</th><th>Barcode</th><th>Category</th><th>Location</th><th>Expected Qty</th><th></th></tr></thead>
+                    <tbody id="itemsBody"></tbody></table></div>
+                    <div id="itemsEmpty" class="empty-state section-hidden"><p><strong>No items yet</strong></p><p>Add your first inventory item to get started.</p></div>
+                </div>
+            </section>
+
+            <!-- COUNT -->
+            <section id="tab-count" class="section-hidden">
+                <div class="toolbar">
+                    <input class="search-bar" type="text" placeholder="Search items to count..." id="searchCount" oninput="renderCount()">
+                    <div class="toolbar-group">
+                        <select id="filterCountCategory" class="btn" onchange="renderCount()"><option value="">All Categories</option></select>
+                        <select id="filterCountLocation" class="btn" onchange="renderCount()"><option value="">All Locations</option></select>
+                        <button class="btn" onclick="clearCounts()">Clear Counts</button>
+                        <button class="btn btn-primary" onclick="saveCountsAsSnapshot()">Save Snapshot</button>
+                    </div>
+                </div>
+                <div class="card"><div class="table-scroll">
+                    <table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Location</th><th>Expected</th><th>Actual Count</th></tr></thead>
+                    <tbody id="countBody"></tbody></table></div>
+                    <div id="countEmpty" class="empty-state section-hidden"><p><strong>No items to count</strong></p><p>Add items first in the Items tab.</p></div>
+                </div>
+            </section>
+
+            <!-- SCAN -->
+            <section id="tab-scan" class="section-hidden">
+                <div class="card" style="text-align:center;">
+                    <h2>Barcode Scanner</h2>
+                    <p style="color:var(--text-muted);margin-bottom:16px;">Scan barcodes to quickly find items or add counts.</p>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+                        <button class="btn btn-primary" id="startScanBtn" onclick="toggleScanner()">Start Scanner</button>
+                        <select id="scanMode" class="btn"><option value="lookup">Lookup Mode</option><option value="count">Quick Count (+1)</option></select>
+                    </div>
+                    <div id="scannerContainer" style="display:none;"></div>
+                    <div id="scanResult" style="display:none;"></div>
+                    <div style="margin-top:16px;">
+                        <p style="font-size:13px;color:var(--text-muted);">Or enter barcode manually:</p>
+                        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
+                            <input class="search-bar" type="text" id="manualBarcode" placeholder="Enter barcode..." style="width:220px;"
+                                onkeydown="if(event.key==='Enter')processBarcode(this.value)">
+                            <button class="btn" onclick="processBarcode(document.getElementById('manualBarcode').value)">Go</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" id="scanLog" style="display:none;"><h2>Scan Log</h2><div id="scanLogBody"></div></div>
+            </section>
+
+            <!-- LOCATIONS -->
+            <section id="tab-locations" class="section-hidden">
+                <div class="toolbar"><h2 style="font-size:18px;">Locations</h2><button class="btn btn-primary" onclick="openLocationModal()">+ Add Location</button></div>
+                <div id="locationsGrid"></div>
+                <div id="locationDetail" style="display:none;">
+                    <div class="toolbar">
+                        <div><button class="btn btn-sm" onclick="closeLocationDetail()">&larr; Back</button><strong id="locationDetailName" style="margin-left:8px;font-size:16px;"></strong></div>
+                    </div>
+                    <div class="card"><div class="table-scroll">
+                        <table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Expected</th><th>Last Count</th></tr></thead>
+                        <tbody id="locationDetailBody"></tbody></table></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RECONCILE -->
+            <section id="tab-reconcile" class="section-hidden">
+                <div class="print-header"><h2>Inventory Reconciliation Report</h2><p id="printDate"></p><p id="printUser"></p></div>
+                <div class="stats-grid" id="reconcileStats"></div>
+                <div class="toolbar no-print">
+                    <input class="search-bar" type="text" placeholder="Search..." id="searchReconcile" oninput="renderReconcile()">
+                    <div class="toolbar-group">
+                        <select id="filterVariance" class="btn" onchange="renderReconcile()"><option value="">All Items</option><option value="short">Short Only</option><option value="over">Over Only</option><option value="match">Match Only</option><option value="uncounted">Uncounted</option></select>
+                        <select id="filterReconcileLocation" class="btn" onchange="renderReconcile()"><option value="">All Locations</option></select>
+                        <button class="btn" onclick="printReport()">Print Report</button>
+                    </div>
+                </div>
+                <div class="card"><div class="table-scroll">
+                    <table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Location</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Status</th></tr></thead>
+                    <tbody id="reconcileBody"></tbody></table></div>
+                    <div id="reconcileEmpty" class="empty-state section-hidden"><p><strong>No count data</strong></p><p>Complete a count first in the Count tab.</p></div>
+                </div>
+            </section>
+
+            <!-- HISTORY -->
+            <section id="tab-history" class="section-hidden">
+                <div class="toolbar"><h2 style="font-size:18px;">Count History</h2></div>
+                <div class="card">
+                    <div id="historyList"></div>
+                    <div id="historyEmpty" class="empty-state"><p><strong>No snapshots yet</strong></p><p>Save a count snapshot to start tracking history.</p></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ITEM MODAL -->
+    <div class="modal-overlay" id="itemModal"><div class="modal">
+        <h3 id="modalTitle">Add Item</h3>
+        <input type="hidden" id="editItemId">
+        <div class="form-group"><label>Item Name</label><input type="text" id="itemName" placeholder="e.g. Absolut Vodka 750ml"></div>
+        <div class="form-group"><label>SKU / Code</label><input type="text" id="itemSku" placeholder="e.g. ABS-750"></div>
+        <div class="form-group"><label>Barcode</label><div style="display:flex;gap:8px;"><input type="text" id="itemBarcode" placeholder="Scan or type barcode" style="flex:1;"><button class="btn btn-sm" type="button" onclick="scanForField('itemBarcode')">Scan</button></div></div>
+        <div class="form-group"><label>Category</label><input type="text" id="itemCategory" placeholder="e.g. Spirits, Beer, Glassware" list="categoryList"><datalist id="categoryList"></datalist></div>
+        <div class="form-group"><label>Location</label><input type="text" id="itemLocation" placeholder="e.g. Main Bar, Storage Room" list="locationList"><datalist id="locationList"></datalist></div>
+        <div class="form-group"><label>Expected Quantity</label><input type="number" id="itemExpected" placeholder="0" min="0" step="0.01"></div>
+        <div class="form-actions"><button class="btn" onclick="closeModal('itemModal')">Cancel</button><button class="btn btn-primary" onclick="saveItem()">Save</button></div>
+    </div></div>
+
+    <!-- LOCATION MODAL -->
+    <div class="modal-overlay" id="locationModal"><div class="modal">
+        <h3>Add Location</h3>
+        <div class="form-group"><label>Location Name</label><input type="text" id="newLocationName" placeholder="e.g. Main Bar, Basement Storage"></div>
+        <div class="form-group"><label>Description (optional)</label><input type="text" id="newLocationDesc" placeholder="e.g. Behind the bar area"></div>
+        <div class="form-actions"><button class="btn" onclick="closeModal('locationModal')">Cancel</button><button class="btn btn-primary" onclick="addLocation()">Add Location</button></div>
+    </div></div>
+
+    <!-- SNAPSHOT MODAL -->
+    <div class="modal-overlay" id="snapshotModal"><div class="modal modal-lg">
+        <h3 id="snapshotModalTitle">Snapshot</h3>
+        <div class="table-scroll"><table><thead><tr><th>Name</th><th>SKU</th><th>Location</th><th>Expected</th><th>Counted</th><th>Variance</th><th>Status</th></tr></thead>
+        <tbody id="snapshotModalBody"></tbody></table></div>
+        <div class="form-actions"><button class="btn" onclick="closeModal('snapshotModal')">Close</button></div>
+    </div></div>
+
+    <div class="toast-container" id="toastContainer"></div>
+</body>
+</html>

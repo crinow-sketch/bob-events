@@ -7,6 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+.site-bar { background:#0D1B2A; display:flex; align-items:center; justify-content:space-between; padding:0.5rem 1.5rem; font-family:'Source Sans 3','Segoe UI',sans-serif; }
+.site-bar .site-name { color:#fff; font-weight:700; font-size:0.95rem; letter-spacing:0.5px; }
+.site-bar .site-links { display:flex; gap:0.3rem; }
+.site-bar .site-links a { color:rgba(255,255,255,0.7); text-decoration:none; font-size:0.8rem; font-weight:600; padding:0.35rem 0.9rem; border-radius:6px; transition:all 0.2s; text-transform:uppercase; letter-spacing:0.5px; }
+.site-bar .site-links a:hover { color:#fff; background:rgba(255,255,255,0.1); }
+.site-bar .site-links a.current { color:#FFB81C; background:rgba(255,184,28,0.15); }
 :root {
   --terracotta: #C2654A;
   --terra-light: #D4816A;
@@ -223,6 +229,14 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 </style>
 </head>
 <body>
+
+<div class="site-bar">
+  <span class="site-name">BOB Staff Hub</span>
+  <div class="site-links">
+    <a href="index.html" class="current">Events</a>
+    <a href="inventory.html">Inventory</a>
+  </div>
+</div>
 
 <nav>
   <div class="brand">Buffalo Olde Brewery <span>Events Hub</span></div>
