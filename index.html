@@ -239,7 +239,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
   <div class="hero">
     <h1>Live Music & Events</h1>
     <div class="accent-line"></div>
-    <p>2026 Season &middot; April through September</p>
+    <p>Live Schedule &middot; Updated in Real Time</p>
   </div>
   <div class="stats-row" id="stats-row"></div>
   <div class="section-heading"><h2>Coming Up Next</h2></div>
@@ -479,7 +479,16 @@ let BEOS = [];
 
 const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DOWS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-const MONTHS=[{key:"2026-04",label:"April"},{key:"2026-05",label:"May"},{key:"2026-06",label:"June"},{key:"2026-07",label:"July"},{key:"2026-08",label:"August"},{key:"2026-09",label:"September"}];
+function buildMonths() {
+  const now = new Date();
+  const months = [];
+  for (let i = -2; i < 10; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    months.push({key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: MO[d.getMonth()]+' '+d.getFullYear()});
+  }
+  return months;
+}
+const MONTHS = buildMonths();
 const ADMIN_PIN = "1234";
 let isUnlocked = false;
 
