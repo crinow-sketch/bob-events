@@ -89,6 +89,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 .cal-event.music { background:var(--navy); color:#fff; }
 .cal-event.event { background:var(--terracotta); color:#fff; }
 .cal-event.bmc { background:var(--sage); color:#fff; }
+.cal-event.sabres { background:#003087; color:#FFB81C; font-weight:700; }
 .cal-legend { display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:2rem; }
 .cal-legend span { display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--text-muted); }
 .cal-legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
@@ -109,6 +110,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 .tag.music-tag { background:var(--navy); color:#fff; opacity:0.85; }
 .tag.event-tag { background:var(--terra-pale); color:var(--terracotta); }
 .tag.bmc-tag { background:var(--sage-pale); color:var(--sage); }
+.tag.sabres-tag { background:#003087; color:#FFB81C; }
 .event-notes { font-size:0.82rem; color:var(--text-light); margin-top:0.4rem; padding-top:0.4rem; border-top:1px dashed var(--border); }
 .event-notes.tentative { color:var(--terracotta); font-weight:600; }
 
@@ -228,7 +230,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <li><a href="#" class="nav-link active" data-section="dashboard">Home</a></li>
     <li><a href="#" class="nav-link" data-section="calendar">Calendar</a></li>
     <li><a href="#" class="nav-link" data-section="upcoming">All Events</a></li>
-    <li><a href="#" class="nav-link" data-section="manage">Manage BEOs</a></li>
+    <li><a href="#" class="nav-link" data-section="manage">Manage Events</a></li>
   </ul>
 </nav>
 
@@ -253,6 +255,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <span><i style="background:var(--navy)"></i> Live Music</span>
     <span><i style="background:var(--terracotta)"></i> Private Event / BEO</span>
     <span><i style="background:var(--sage)"></i> BMC Concert</span>
+    <span><i style="background:#003087"></i> Sabres Playoffs</span>
   </div>
 </div>
 
@@ -265,6 +268,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <button class="pill" data-filter="music">Live Music</button>
     <button class="pill" data-filter="event">Private Events</button>
     <button class="pill" data-filter="bmc">BMC Concerts</button>
+    <button class="pill" data-filter="sabres">Sabres Playoffs</button>
   </div>
   <div id="events-list" class="events-grid"></div>
 </div>
@@ -595,9 +599,12 @@ function closeMusicModal() { document.getElementById('music-modal').classList.re
 
 // Build unified event list
 function getAllEvents() {
-  const musicEvents = MUSIC.map(m => ({
-    ...m, source:'music', type: m.notes&&m.notes.toLowerCase().includes('bmc') ? 'bmc' : 'music'
-  }));
+  const musicEvents = MUSIC.map(m => {
+    let type = 'music';
+    if (m.notes && m.notes.toLowerCase().includes('bmc')) type = 'bmc';
+    if (m.name && m.name.toLowerCase().includes('sabres')) type = 'sabres';
+    return {...m, source:'music', type};
+  });
   const beoEvents = BEOS.map(b => ({
     date: b.date,
     dow: b.dow || DOWS[new Date(b.date+'T12:00:00').getDay()],
@@ -643,8 +650,8 @@ document.querySelectorAll('.nav-link').forEach(link => {
 // ===== EVENT CARD =====
 function card(ev) {
   const d = new Date(ev.date+'T12:00:00');
-  const tagLabel = ev.type==='event'?'Private Event':ev.type==='bmc'?'BMC':'Live Music';
-  const tagCls = ev.type==='event'?'event-tag':ev.type==='bmc'?'bmc-tag':'music-tag';
+  const tagLabel = ev.type==='event'?'Private Event':ev.type==='bmc'?'BMC':ev.type==='sabres'?'Sabres Playoffs':'Live Music';
+  const tagCls = ev.type==='event'?'event-tag':ev.type==='bmc'?'bmc-tag':ev.type==='sabres'?'sabres-tag':'music-tag';
   let notes='';
   if (ev.source==='music' && ev.notes && !ev.notes.toLowerCase().includes('bmc')) {
     notes = `<div class="event-notes ${ev.notes.includes('TENTATIVE')?'tentative':''}">${ev.notes}</div>`;
@@ -756,6 +763,7 @@ function renderEventsList(filter){
   if(filter==='music') f=f.filter(e=>e.type==='music');
   else if(filter==='event') f=f.filter(e=>e.type==='event');
   else if(filter==='bmc') f=f.filter(e=>e.type==='bmc');
+  else if(filter==='sabres') f=f.filter(e=>e.type==='sabres');
   document.getElementById('events-list').innerHTML=f.map(card).join('');
 }
 document.querySelectorAll('.pill').forEach(b=>b.addEventListener('click',()=>renderEventsList(b.dataset.filter)));
