@@ -480,7 +480,11 @@ const MUSIC=[
 {date:"2026-09-25",dow:"Friday",name:"The Plaigerists",time:"6pm-9pm",notes:""}
 ];
 
-// ===== BEO DATA (loaded from beos.json) =====
+// ===== SUPABASE CONFIG =====
+const SB_URL = 'https://cbdjoydzoiysvcleybpq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZGpveWR6b2l5c3ZjbGV5YnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODI1MzIsImV4cCI6MjA5NDI1ODUzMn0.WajecLt1M_b1cHCyZ9j-p6CUX-Z9z-pcG3ISE8I1Fe0';
+const sbHeaders = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
 let BEOS = [];
 
 const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -489,12 +493,44 @@ const MONTHS=[{key:"2026-04",label:"April"},{key:"2026-05",label:"May"},{key:"20
 const ADMIN_PIN = "1234";
 let isUnlocked = false;
 
-// ===== LOAD BEOs from beos.json =====
+// ===== DB helpers =====
+function dbToLocal(row) {
+  return {
+    id:row.id, name:row.name, date:row.date, dow:row.dow, type:row.type, status:row.status,
+    arrival:row.arrival, start:row.start_time, end:row.end_time, setup:row.setup_time,
+    contact:row.contact, phone:row.phone, email:row.email,
+    adults:row.adults, children:row.children, guaranteed:row.guaranteed, expected:row.expected,
+    location:row.location, rain:row.rain, tableSetup:row.table_setup, seating:row.seating, setupNotes:row.setup_notes,
+    package:row.package, ppp:row.ppp, bar:row.bar, barLimit:row.bar_limit, menu:row.menu||[], dietary:row.dietary,
+    leadServer:row.lead_server, bartender:row.bartender, servers:row.servers, bussers:row.bussers, kitchenLead:row.kitchen_lead, mod:row.mod,
+    timeline:row.timeline||[],
+    foodTotal:row.food_total, bevTotal:row.bev_total, roomFee:row.room_fee, serviceCharge:row.service_charge, tax:row.tax, total:row.total,
+    deposit:row.deposit, depositStatus:row.deposit_status, paymentMethod:row.payment_method,
+    internalNotes:row.internal_notes, clientNotes:row.client_notes, lastUpdated:row.last_updated
+  };
+}
+function localToDb(b) {
+  return {
+    id:b.id, name:b.name, date:b.date, dow:b.dow, type:b.type, status:b.status,
+    arrival:b.arrival, start_time:b.start, end_time:b.end, setup_time:b.setup,
+    contact:b.contact, phone:b.phone, email:b.email,
+    adults:b.adults, children:b.children, guaranteed:b.guaranteed, expected:b.expected,
+    location:b.location, rain:b.rain, table_setup:b.tableSetup, seating:b.seating, setup_notes:b.setupNotes,
+    package:b.package, ppp:b.ppp, bar:b.bar, bar_limit:b.barLimit, menu:b.menu, dietary:b.dietary,
+    lead_server:b.leadServer, bartender:b.bartender, servers:b.servers, bussers:b.bussers, kitchen_lead:b.kitchenLead, mod:b.mod,
+    timeline:b.timeline,
+    food_total:b.foodTotal, bev_total:b.bevTotal, room_fee:b.roomFee, service_charge:b.serviceCharge, tax:b.tax, total:b.total,
+    deposit:b.deposit, deposit_status:b.depositStatus, payment_method:b.paymentMethod,
+    internal_notes:b.internalNotes, client_notes:b.clientNotes, last_updated:b.lastUpdated||new Date().toISOString().slice(0,10)
+  };
+}
+
+// ===== LOAD BEOs from Supabase =====
 async function loadBEOs() {
   try {
-    const r = await fetch('beos.json?t='+Date.now());
-    if (r.ok) BEOS = await r.json();
-  } catch(e) { console.log('No beos.json found, using empty list'); }
+    const r = await fetch(SB_URL+'/rest/v1/beos?select=*&order=date', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if (r.ok) { const rows = await r.json(); BEOS = rows.map(dbToLocal); }
+  } catch(e) { console.log('DB fetch failed, using empty list', e); }
   renderAll();
 }
 
@@ -915,38 +951,47 @@ function collectBEOData(){
   };
 }
 
-function saveBEO(){
+async function saveBEO(){
   const data=collectBEOData();
   if(!data.name||!data.date){alert('Event name and date are required.');return;}
-  const idx=BEOS.findIndex(b=>b.id===data.id);
-  if(idx>=0) BEOS[idx]=data; else BEOS.push(data);
-  persistBEOs();
-  closeBEOModal();
-  renderAll();
-  alert('Published to schedule! Run publish.bat on your computer to push live.');
+  const dbRow=localToDb(data);
+  const isUpdate=BEOS.some(b=>b.id===data.id);
+  try {
+    const url=isUpdate
+      ? SB_URL+'/rest/v1/beos?id=eq.'+encodeURIComponent(data.id)
+      : SB_URL+'/rest/v1/beos';
+    const r=await fetch(url,{method:isUpdate?'PATCH':'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(dbRow)});
+    if(!r.ok){const e=await r.json();throw new Error(e.message||'Save failed');}
+    await loadBEOs();
+    closeBEOModal();
+  } catch(e){ alert('Error saving: '+e.message); }
 }
 
-function saveBEODraft(){
+async function saveBEODraft(){
   const data=collectBEOData();
   data.status='draft';
   if(!data.name){alert('Enter an event name.');return;}
   if(!data.date) data.date='2026-01-01';
-  const idx=BEOS.findIndex(b=>b.id===data.id);
-  if(idx>=0) BEOS[idx]=data; else BEOS.push(data);
-  persistBEOs();
-  closeBEOModal();
-  renderAll();
+  const dbRow=localToDb(data);
+  const isUpdate=BEOS.some(b=>b.id===data.id);
+  try {
+    const url=isUpdate
+      ? SB_URL+'/rest/v1/beos?id=eq.'+encodeURIComponent(data.id)
+      : SB_URL+'/rest/v1/beos';
+    const r=await fetch(url,{method:isUpdate?'PATCH':'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(dbRow)});
+    if(!r.ok){const e=await r.json();throw new Error(e.message||'Save failed');}
+    await loadBEOs();
+    closeBEOModal();
+  } catch(e){ alert('Error saving draft: '+e.message); }
 }
 
-function deleteBEO(id){
+async function deleteBEO(id){
   if(!confirm('Remove this event from the schedule?')) return;
-  BEOS=BEOS.filter(b=>b.id!==id);
-  persistBEOs();
-  renderAll();
-}
-
-function persistBEOs(){
-  localStorage.setItem('bob_beos',JSON.stringify(BEOS));
+  try {
+    const r=await fetch(SB_URL+'/rest/v1/beos?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:sbHeaders});
+    if(!r.ok) throw new Error('Delete failed');
+    await loadBEOs();
+  } catch(e){ alert('Error deleting: '+e.message); }
 }
 
 function printBEO(){ window.print(); }
