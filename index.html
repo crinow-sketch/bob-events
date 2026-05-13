@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOB Events | Buffalo Olde Brewery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --terracotta: #C2654A;
+  --terra-light: #D4816A;
+  --terra-pale: #F5E6E0;
+  --navy: #1B2A4A;
+  --navy-light: #2D4470;
+  --sage: #7A9B7E;
+  --sage-light: #A8C5AB;
+  --sage-pale: #E8F0E9;
+  --cream: #FAF7F2;
+  --warm-white: #FFFFFF;
+  --warm-gray: #F0EDE8;
+  --text: #2C2C2C;
+  --text-light: #6B6560;
+  --text-muted: #9B958E;
+  --border: #E5E0D8;
+  --shadow: 0 2px 12px rgba(27,42,74,0.08);
+  --shadow-hover: 0 6px 24px rgba(27,42,74,0.12);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .brand { font-family: 'Playfair Display', Georgia, serif; }
+
+/* NAV */
+nav {
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--navy);
+  padding: 0.9rem 0;
+  letter-spacing: -0.3px;
+}
+.brand span {
+  color: var(--terracotta);
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+nav ul { list-style: none; display: flex; gap: 0; }
+nav a {
+  color: var(--text-light);
+  text-decoration: none;
+  padding: 1rem 1rem;
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.2s;
+  border-bottom: 2.5px solid transparent;
+  text-transform: uppercase;
+}
+nav a:hover { color: var(--terracotta); }
+nav a.active { color: var(--terracotta); border-bottom-color: var(--terracotta); }
+
+/* SECTIONS */
+.section { display: none; padding: 2rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+.section.active { display: block; }
+
+/* HERO */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem 1.5rem;
+}
+.hero h1 {
+  font-size: 2.6rem;
+  color: var(--navy);
+  margin-bottom: 0.4rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.hero .accent-line {
+  width: 60px;
+  height: 3px;
+  background: var(--terracotta);
+  margin: 0.8rem auto;
+  border-radius: 2px;
+}
+.hero p { color: var(--text-light); font-size: 1.05rem; font-weight: 300; }
+
+/* STAT CARDS */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+.stat-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.stat-num.music { color: var(--navy); }
+.stat-num.events { color: var(--terracotta); }
+.stat-num.bmc { color: var(--sage); }
+.stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 0.3rem; }
+
+/* SECTION HEADING */
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+.section-heading h2 { font-size: 1.3rem; color: var(--navy); white-space: nowrap; }
+.section-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+.filter-bar label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.pill {
+  background: var(--warm-white);
+  border: 1.5px solid var(--border);
+  color: var(--text-light);
+  padding: 0.4rem 1rem;
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.pill:hover { border-color: var(--terracotta); color: var(--terracotta); }
+.pill.active { background: var(--terracotta); color: #fff; border-color: var(--terracotta); }
+.pill.active.sage { background: var(--sage); border-color: var(--sage); }
+.pill.active.navy { background: var(--navy); border-color: var(--navy); }
+
+/* MONTH NAV */
+.month-nav { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.month-pill {
+  background: var(--warm-white);
+  border: 1.5px solid var(--border);
+  color: var(--text-light);
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.month-pill:hover { border-color: var(--navy); color: var(--navy); }
+.month-pill.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* CALENDAR */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+.cal-header {
+  background: var(--navy);
+  padding: 0.7rem 0.4rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.cal-day {
+  background: var(--warm-white);
+  min-height: 105px;
+  padding: 0.4rem;
+  position: relative;
+  transition: background 0.2s;
+}
+.cal-day:hover { background: var(--warm-gray); }
+.cal-day.empty { background: var(--warm-gray); opacity: 0.5; }
+.cal-day.today { background: #FFFDF5; }
+.cal-day .day-num {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.cal-day.today .day-num {
+  background: var(--terracotta);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+.cal-event {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-weight: 500;
+}
+.cal-event:hover { opacity: 0.8; }
+.cal-event.music { background: var(--navy); color: #fff; }
+.cal-event.event { background: var(--terracotta); color: #fff; }
+.cal-event.bmc { background: var(--sage); color: #fff; }
+
+/* EVENT CARDS */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 1rem;
+}
+.event-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.event-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.date-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 54px;
+  flex-shrink: 0;
+}
+.date-badge .month-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: var(--terracotta);
+}
+.date-badge .day-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1.1;
+}
+.date-badge .dow-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.event-info { flex: 1; min-width: 0; }
+.event-info h3 {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  color: var(--navy);
+}
+.event-info h3.private { color: var(--terracotta); }
+.event-info .time-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
+.tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  margin-top: 0.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+.tag.music-tag { background: var(--navy); color: #fff; opacity: 0.85; }
+.tag.event-tag { background: var(--terra-pale); color: var(--terracotta); }
+.tag.bmc-tag { background: var(--sage-pale); color: var(--sage); }
+.event-notes {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--border);
+}
+.event-notes.tentative { color: var(--terracotta); font-weight: 600; }
+
+/* ADMIN GATE */
+.admin-gate {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+.admin-gate p { color: var(--text-light); margin-bottom: 1.5rem; font-size: 1rem; }
+.pin-input {
+  width: 200px;
+  padding: 0.7rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 6px;
+  font-family: inherit;
+  font-weight: 700;
+}
+.pin-input:focus { outline: none; border-color: var(--terracotta); }
+.pin-error { color: var(--terracotta); font-size: 0.85rem; margin-top: 0.5rem; display: none; font-weight: 600; }
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--sage-pale);
+  color: var(--sage);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 99px;
+  margin-bottom: 1rem;
+}
+
+/* BEO FORM */
+.beo-wrap {
+  background: var(--warm-white);
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.beo-header {
+  background: var(--navy);
+  color: #fff;
+  text-align: center;
+  padding: 1.8rem 1.5rem;
+}
+.beo-header h2 { font-size: 1.5rem; letter-spacing: 1px; }
+.beo-header p { font-size: 0.9rem; opacity: 0.7; margin-top: 0.2rem; font-weight: 300; }
+.beo-body { padding: 2rem; }
+.beo-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 2rem 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--terracotta);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.beo-section-title:first-child { margin-top: 0; }
+.beo-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--terra-pale);
+}
+.beo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem 1.5rem;
+}
+.beo-field { display: flex; flex-direction: column; }
+.beo-field.full { grid-column: 1 / -1; }
+.beo-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.3rem;
+}
+.beo-field input, .beo-field select, .beo-field textarea {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--cream);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.beo-field input:focus, .beo-field select:focus, .beo-field textarea:focus {
+  outline: none;
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 3px var(--terra-pale);
+  background: #fff;
+}
+.beo-field textarea { min-height: 80px; resize: vertical; }
+
+.beo-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.beo-table th {
+  background: var(--warm-gray);
+  padding: 0.6rem 0.5rem;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.beo-table td {
+  padding: 0.3rem;
+  border-top: 1px solid var(--border);
+}
+.beo-table input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--text);
+}
+.beo-table input:focus { outline: none; background: #FFFDF5; }
+
+.sig-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.sig-block label { display: block; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
+.sig-line { border-bottom: 1.5px solid var(--text); height: 35px; margin-bottom: 0.3rem; }
+
+.beo-actions {
+  display: flex; gap: 0.75rem; justify-content: center; margin-top: 2rem;
+  padding: 1.5rem; border-top: 1px solid var(--border); flex-wrap: wrap;
+}
+.btn {
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-primary { background: var(--terracotta); color: #fff; }
+.btn-primary:hover { background: var(--terra-light); }
+.btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--navy); }
+.btn-danger { background: transparent; color: var(--terracotta); border: 1.5px solid var(--terra-pale); }
+.btn-danger:hover { background: var(--terra-pale); }
+.btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; border-radius: 6px; }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(27,42,74,0.4);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--warm-white);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  position: relative;
+}
+.modal h3 { color: var(--navy); margin-bottom: 0.8rem; font-size: 1.3rem; }
+.modal .close-btn {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: var(--warm-gray);
+  border: none;
+  color: var(--text-muted);
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal .close-btn:hover { background: var(--border); color: var(--text); }
+.modal-row { display: flex; gap: 0.5rem; margin: 0.5rem 0; font-size: 0.9rem; }
+.modal-row strong { color: var(--text-muted); font-weight: 600; min-width: 55px; }
+
+/* PRINT */
+@media print {
+  nav, .filter-bar, .month-nav, .beo-actions, .hero, .no-print, .admin-gate, .stats-row { display: none !important; }
+  body { background: #fff; }
+  .section { display: block !important; padding: 0; max-width: 100%; }
+  .beo-wrap { box-shadow: none; border: none; }
+  .beo-field input, .beo-field select, .beo-field textarea, .beo-table input {
+    border: none; padding: 0; background: transparent; box-shadow: none;
+  }
+  .beo-header { background: #fff !important; color: #000 !important; border-bottom: 2px solid #000; }
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  nav { flex-direction: column; padding: 0.5rem 1rem; gap: 0; }
+  nav ul { flex-wrap: wrap; justify-content: center; }
+  nav a { padding: 0.7rem 0.7rem; font-size: 0.8rem; }
+  .hero h1 { font-size: 1.8rem; }
+  .calendar-grid { font-size: 0.7rem; }
+  .cal-day { min-height: 70px; padding: 0.2rem; }
+  .cal-event { font-size: 0.6rem; }
+  .events-grid { grid-template-columns: 1fr; }
+  .beo-grid { grid-template-columns: 1fr; }
+  .beo-body { padding: 1.2rem; }
+  .sig-grid { grid-template-columns: 1fr; }
+  .section { padding: 1.5rem 1rem; }
+}
+
+/* LOCK ICON */
+.lock-icon {
+  display: inline-block;
+  width: 18px; height: 18px;
+  background: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z'/%3E%3C/svg%3E") center/contain no-repeat;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.logout-link {
+  background: none; border: none; color: var(--terracotta); cursor: pointer;
+  font-size: 0.82rem; font-weight: 600; font-family: inherit; text-decoration: underline;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">Buffalo Olde Brewery <span>Events Hub</span></div>
+  <ul>
+    <li><a href="#" class="nav-link active" data-section="dashboard">Home</a></li>
+    <li><a href="#" class="nav-link" data-section="calendar">Calendar</a></li>
+    <li><a href="#" class="nav-link" data-section="upcoming">All Events</a></li>
+    <li><a href="#" class="nav-link" data-section="beo"><span class="lock-icon"></span>BEO</a></li>
+  </ul>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section active">
+  <div class="hero">
+    <h1>Live Music & Events</h1>
+    <div class="accent-line"></div>
+    <p>2026 Season &middot; April through September</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num music">45</div>
+      <div class="stat-label">Total Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num music">43</div>
+      <div class="stat-label">Music Nights</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num events">2</div>
+      <div class="stat-label">Private Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num bmc">6</div>
+      <div class="stat-label">BMC Concerts</div>
+    </div>
+  </div>
+  <div class="section-heading"><h2>Coming Up Next</h2></div>
+  <div id="next-events" class="events-grid"></div>
+</div>
+
+<!-- CALENDAR -->
+<div id="calendar" class="section">
+  <div class="section-heading"><h2>Monthly Calendar</h2></div>
+  <div class="month-nav" id="month-nav"></div>
+  <div class="calendar-grid" id="cal-grid"></div>
+  <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">
+    <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--text-muted);">
+      <span style="width:12px;height:12px;border-radius:3px;background:var(--navy);display:inline-block;"></span> Live Music
+    </div>
+    <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--text-muted);">
+      <span style="width:12px;height:12px;border-radius:3px;background:var(--terracotta);display:inline-block;"></span> Private Event
+    </div>
+    <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--text-muted);">
+      <span style="width:12px;height:12px;border-radius:3px;background:var(--sage);display:inline-block;"></span> BMC Concert
+    </div>
+  </div>
+</div>
+
+<!-- ALL EVENTS -->
+<div id="upcoming" class="section">
+  <div class="section-heading"><h2>All Events</h2></div>
+  <div class="filter-bar">
+    <label>Filter:</label>
+    <button class="pill active" data-filter="all">All</button>
+    <button class="pill" data-filter="music">Live Music</button>
+    <button class="pill" data-filter="event">Private Events</button>
+    <button class="pill" data-filter="bmc">BMC Concerts</button>
+  </div>
+  <div id="events-list" class="events-grid"></div>
+</div>
+
+<!-- BEO -->
+<div id="beo" class="section">
+  <!-- Admin Gate -->
+  <div class="admin-gate" id="admin-gate">
+    <div style="margin-bottom:1.5rem;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C2654A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <h2 style="color:var(--navy); font-size:1.5rem; margin-bottom:0.5rem;">Staff Access Required</h2>
+    <p>Enter the manager PIN to create and edit Banquet Event Orders.</p>
+    <input type="password" class="pin-input" id="pin-input" maxlength="6" placeholder="&bull;&bull;&bull;&bull;">
+    <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+    <div style="margin-top:1rem;">
+      <button class="btn btn-primary" onclick="checkPin()">Unlock</button>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1.5rem;">Ask your manager for the access PIN.</p>
+  </div>
+
+  <!-- BEO Form (hidden until unlocked) -->
+  <div id="beo-form-area" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="admin-badge">&#10003; Manager Access</div>
+      <button class="logout-link" onclick="lockBEO()">Lock &amp; Sign Out</button>
+    </div>
+    <div class="beo-wrap">
+      <div class="beo-header">
+        <h2>Banquet Event Order</h2>
+        <p>Buffalo Olde Brewery</p>
+      </div>
+      <div class="beo-body">
+
+        <div class="beo-section-title">Event Information</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Event Name</label><input type="text" id="beo-name"></div>
+          <div class="beo-field"><label>BEO #</label><input type="text" id="beo-number"></div>
+          <div class="beo-field"><label>Contact Name</label><input type="text" id="beo-contact"></div>
+          <div class="beo-field"><label>Contact Phone</label><input type="tel" id="beo-phone"></div>
+          <div class="beo-field"><label>Contact Email</label><input type="email" id="beo-email"></div>
+          <div class="beo-field"><label>Event Type</label>
+            <select id="beo-type"><option value="">Select...</option><option>Rehearsal Dinner</option><option>Bridal Shower</option><option>Birthday Party</option><option>Corporate Event</option><option>Holiday Party</option><option>Memorial / Celebration of Life</option><option>Graduation Party</option><option>Engagement Party</option><option>Baby Shower</option><option>Other</option></select>
+          </div>
+          <div class="beo-field"><label>Event Date</label><input type="date" id="beo-date"></div>
+          <div class="beo-field"><label>Day of Week</label><input type="text" id="beo-dow" readonly></div>
+          <div class="beo-field"><label>Arrival Time</label><input type="time" id="beo-arrival"></div>
+          <div class="beo-field"><label>Event Start</label><input type="time" id="beo-start"></div>
+          <div class="beo-field"><label>Event End</label><input type="time" id="beo-end"></div>
+          <div class="beo-field"><label>Setup Time</label><input type="time" id="beo-setup"></div>
+        </div>
+
+        <div class="beo-section-title">Guest Count</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Adults</label><input type="number" id="beo-adults" min="0"></div>
+          <div class="beo-field"><label>Children</label><input type="number" id="beo-children" min="0"></div>
+          <div class="beo-field"><label>Guaranteed Count</label><input type="number" id="beo-guaranteed" min="0"></div>
+          <div class="beo-field"><label>Expected Count</label><input type="number" id="beo-expected" min="0"></div>
+        </div>
+
+        <div class="beo-section-title">Location & Setup</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Location</label>
+            <select id="beo-location"><option value="">Select...</option><option>Patio - Full</option><option>Patio - Left Side</option><option>Patio - Right Side</option><option>Indoor Dining Room</option><option>Iron Ivy Room</option><option>Full Buyout</option><option>Other</option></select>
+          </div>
+          <div class="beo-field"><label>Rain Backup</label>
+            <select id="beo-rain"><option value="">Select...</option><option>Iron Ivy Room</option><option>Indoor Dining Room</option><option>Tent (if available)</option><option>N/A (indoor event)</option><option>Other</option></select>
+          </div>
+          <div class="beo-field"><label>Table Setup</label>
+            <select id="beo-table-setup"><option value="">Select...</option><option>Rounds</option><option>Long Tables / Family Style</option><option>Mixed</option><option>Cocktail / Standing</option><option>U-Shape</option><option>Custom</option></select>
+          </div>
+          <div class="beo-field"><label>Seating Style</label>
+            <select id="beo-seating"><option value="">Select...</option><option>Assigned Seats</option><option>Open Seating</option><option>Mixed</option></select>
+          </div>
+          <div class="beo-field full"><label>Setup Notes</label><textarea id="beo-setup-notes" placeholder="AV needs, decor, special arrangements..."></textarea></div>
+        </div>
+
+        <div class="beo-section-title">Food & Beverage</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Package</label>
+            <select id="beo-package"><option value="">Select...</option><option>Hot Lunch Package</option><option>Cold Lunch Package</option><option>Dinner Package A</option><option>Dinner Package B</option><option>Appetizer / Cocktail Package</option><option>Brunch Package</option><option>Custom Menu</option></select>
+          </div>
+          <div class="beo-field"><label>Price Per Person</label><input type="text" id="beo-ppp" placeholder="$"></div>
+          <div class="beo-field"><label>Bar Service</label>
+            <select id="beo-bar"><option value="">Select...</option><option>Open Bar - Full</option><option>Open Bar - Beer & Wine</option><option>Cash Bar</option><option>Consumption Tab</option><option>Hosted Bar with Limit</option><option>No Alcohol</option></select>
+          </div>
+          <div class="beo-field"><label>Bar Budget / Limit</label><input type="text" id="beo-bar-limit" placeholder="$"></div>
+        </div>
+
+        <table class="beo-table">
+          <thead><tr><th style="width:5%">#</th><th style="width:30%">Menu Item</th><th style="width:10%">Qty</th><th style="width:15%">Dietary</th><th style="width:40%">Special Instructions</th></tr></thead>
+          <tbody id="beo-menu-body"></tbody>
+        </table>
+        <button class="btn btn-outline btn-sm no-print" onclick="addMenuRow()">+ Add Item</button>
+
+        <div class="beo-field full" style="margin-top:1rem;">
+          <label>Dietary Restrictions / Allergies</label>
+          <textarea id="beo-dietary" placeholder="Allergies, vegetarian/vegan count, gluten-free needs..."></textarea>
+        </div>
+
+        <div class="beo-section-title">Staffing</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Lead Server</label><input type="text" id="beo-lead-server"></div>
+          <div class="beo-field"><label>Bartender</label><input type="text" id="beo-bartender"></div>
+          <div class="beo-field"><label>Servers Assigned</label><input type="text" id="beo-servers" placeholder="Names or count"></div>
+          <div class="beo-field"><label>Busser(s)</label><input type="text" id="beo-bussers"></div>
+          <div class="beo-field"><label>Kitchen Lead</label><input type="text" id="beo-kitchen-lead"></div>
+          <div class="beo-field"><label>Manager on Duty</label><input type="text" id="beo-mod"></div>
+        </div>
+
+        <div class="beo-section-title">Event Timeline</div>
+        <table class="beo-table">
+          <thead><tr><th style="width:20%">Time</th><th>Activity / Milestone</th></tr></thead>
+          <tbody id="beo-timeline-body"></tbody>
+        </table>
+        <button class="btn btn-outline btn-sm no-print" onclick="addTimelineRow()">+ Add Entry</button>
+
+        <div class="beo-section-title">Financial Summary</div>
+        <div class="beo-grid">
+          <div class="beo-field"><label>Food Total</label><input type="text" id="beo-food-total" placeholder="$"></div>
+          <div class="beo-field"><label>Beverage Total</label><input type="text" id="beo-bev-total" placeholder="$"></div>
+          <div class="beo-field"><label>Room Fee</label><input type="text" id="beo-room-fee" placeholder="$"></div>
+          <div class="beo-field"><label>Service Charge</label><input type="text" id="beo-service" placeholder="$"></div>
+          <div class="beo-field"><label>Tax</label><input type="text" id="beo-tax" placeholder="$"></div>
+          <div class="beo-field"><label style="color:var(--navy); font-size:0.85rem;">Estimated Total</label><input type="text" id="beo-total" placeholder="$" style="font-weight:700; font-size:1.05rem; border-color:var(--navy);"></div>
+          <div class="beo-field"><label>Deposit Required</label><input type="text" id="beo-deposit" placeholder="$"></div>
+          <div class="beo-field"><label>Deposit Status</label>
+            <select id="beo-deposit-status"><option value="">Select...</option><option>Paid in Full</option><option>Partial Payment</option><option>Not Yet Received</option></select>
+          </div>
+          <div class="beo-field full"><label>Payment Method</label>
+            <select id="beo-payment"><option value="">Select...</option><option>Credit Card on File</option><option>Check</option><option>Cash</option><option>Invoice / Net 30</option><option>Other</option></select>
+          </div>
+        </div>
+
+        <div class="beo-section-title">Notes</div>
+        <div class="beo-grid">
+          <div class="beo-field full"><label>Internal / Staff Notes</label><textarea id="beo-notes" placeholder="Staff-only notes, prep requirements, special handling..."></textarea></div>
+          <div class="beo-field full"><label>Client Requests</label><textarea id="beo-client-notes" placeholder="Cake delivery, entertainment, toasts, photo ops..."></textarea></div>
+        </div>
+
+        <div class="sig-grid">
+          <div class="sig-block">
+            <label>Event Coordinator</label>
+            <div class="sig-line"></div>
+            <label>Date: _______________</label>
+          </div>
+          <div class="sig-block">
+            <label>Manager Approval</label>
+            <div class="sig-line"></div>
+            <label>Date: _______________</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="beo-actions no-print">
+        <button class="btn btn-primary" onclick="window.print()">Print BEO</button>
+        <button class="btn btn-outline" onclick="saveBEO()">Save Draft</button>
+        <button class="btn btn-outline" onclick="loadBEO()">Load Saved</button>
+        <button class="btn btn-danger" onclick="clearBEO()">Clear Form</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const EVENTS=[{date:"2026-04-18",dow:"Saturday",type:"Music",name:"Ultraviolet",time:"6pm-9pm",notes:""},{date:"2026-04-23",dow:"Thursday",type:"Music",name:"Tim Britt",time:"6pm-9pm",notes:""},{date:"2026-04-30",dow:"Thursday",type:"Music",name:"Sarah Elizabeth",time:"6pm-9pm",notes:""},{date:"2026-05-09",dow:"Saturday",type:"Music",name:"The Bomb",time:"6pm-9pm",notes:""},{date:"2026-05-14",dow:"Thursday",type:"Music",name:"Eliza and the Fisher Cats",time:"6pm-9pm",notes:"TENTATIVE - may move earlier for Sabres game"},{date:"2026-05-15",dow:"Friday",type:"Event",name:"Debbie's Rehearsal Dinner",time:"Arrival 7:30pm / Dinner 8pm",notes:"45 guests (37A/8C); patio left side; rain backup Iron Ivy; server Kathy"},{date:"2026-05-16",dow:"Saturday",type:"Music",name:"Tim Britt",time:"6pm-9pm",notes:""},{date:"2026-05-21",dow:"Thursday",type:"Music",name:"Queen City Radio",time:"6pm-9pm",notes:""},{date:"2026-05-23",dow:"Saturday",type:"Event",name:"Jessica's Bridal Shower",time:"11am start",notes:"26 guests (21A/5C); Hot Lunch package; lunch time TBC"},{date:"2026-05-28",dow:"Thursday",type:"Music",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},{date:"2026-05-30",dow:"Saturday",type:"Music",name:"The Plaigerists",time:"6pm-9pm",notes:""},{date:"2026-06-04",dow:"Thursday",type:"Music",name:"Rabbit Jaw",time:"6pm-9pm",notes:""},{date:"2026-06-05",dow:"Friday",type:"Music",name:"Randle and the Late Night Scandals",time:"7pm-10pm",notes:"BMC"},{date:"2026-06-06",dow:"Saturday",type:"Music",name:"Boys of Summer",time:"7pm-10pm",notes:""},{date:"2026-06-11",dow:"Thursday",type:"Music",name:"Diane Kallay Band",time:"7pm-10pm",notes:""},{date:"2026-06-13",dow:"Saturday",type:"Music",name:"Cami Clune and the Fringe",time:"7pm-10pm",notes:""},{date:"2026-06-18",dow:"Thursday",type:"Music",name:"Flashback",time:"7pm-10pm",notes:""},{date:"2026-06-19",dow:"Friday",type:"Music",name:"Captain Tom and the Hooligans",time:"7pm-10pm",notes:"BMC"},{date:"2026-06-20",dow:"Saturday",type:"Music",name:"The Plaigerists",time:"6pm-9pm",notes:""},{date:"2026-06-25",dow:"Thursday",type:"Music",name:"Tommy Z",time:"7pm-10pm",notes:""},{date:"2026-06-27",dow:"Saturday",type:"Music",name:"Grosh",time:"7pm-10pm",notes:""},{date:"2026-07-02",dow:"Thursday",type:"Music",name:"Back to Barstools",time:"7pm-10pm",notes:""},{date:"2026-07-09",dow:"Thursday",type:"Music",name:"Ultraviolet",time:"7pm-10pm",notes:""},{date:"2026-07-10",dow:"Friday",type:"Music",name:"The Thurman Brothers",time:"7pm-10pm",notes:"BMC"},{date:"2026-07-16",dow:"Thursday",type:"Music",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},{date:"2026-07-18",dow:"Saturday",type:"Music",name:"The Plaigerists",time:"6pm-9pm",notes:""},{date:"2026-07-23",dow:"Thursday",type:"Music",name:"Eliza and the Fisher Cats",time:"6pm-9pm",notes:""},{date:"2026-07-24",dow:"Friday",type:"Music",name:"Kickstart Rumble",time:"7pm-10pm",notes:"BMC"},{date:"2026-07-25",dow:"Saturday",type:"Music",name:"Allykat",time:"7pm-10pm",notes:""},{date:"2026-08-08",dow:"Saturday",type:"Music",name:"Flashback",time:"7pm-10pm",notes:""},{date:"2026-08-13",dow:"Thursday",type:"Music",name:"Diane Kallay Band",time:"7pm-10pm",notes:""},{date:"2026-08-14",dow:"Friday",type:"Music",name:"Ten Cent Howl",time:"7pm-10pm",notes:"BMC"},{date:"2026-08-15",dow:"Saturday",type:"Music",name:"Rabbit Jaw",time:"7pm-10pm",notes:""},{date:"2026-08-20",dow:"Thursday",type:"Music",name:"Cami Clune and the Fringe",time:"7pm-10pm",notes:""},{date:"2026-08-22",dow:"Saturday",type:"Music",name:"Boys of Summer",time:"7pm-10pm",notes:""},{date:"2026-08-27",dow:"Thursday",type:"Music",name:"Back to the Barstools",time:"7pm-10pm",notes:""},{date:"2026-08-28",dow:"Friday",type:"Music",name:"The Brass Machine (Halfway to Mardi Gras)",time:"7pm-10pm",notes:"BMC"},{date:"2026-08-29",dow:"Saturday",type:"Music",name:"Boogie Monsters",time:"7pm-10pm",notes:""},{date:"2026-09-03",dow:"Thursday",type:"Music",name:"Bad Habit Band",time:"7pm-10pm",notes:""},{date:"2026-09-05",dow:"Saturday",type:"Music",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},{date:"2026-09-10",dow:"Thursday",type:"Music",name:"Ultraviolet",time:"7pm-10pm",notes:""},{date:"2026-09-11",dow:"Friday",type:"Music",name:"BMC RAIN DATE (open)",time:"7pm-10pm",notes:"BMC rain date"},{date:"2026-09-18",dow:"Friday",type:"Music",name:"BMC RAIN DATE (open)",time:"7pm-10pm",notes:"BMC rain date"},{date:"2026-09-19",dow:"Saturday",type:"Music",name:"Grosh",time:"7pm-10pm",notes:""},{date:"2026-09-25",dow:"Friday",type:"Music",name:"The Plaigerists",time:"6pm-9pm",notes:""}];
+
+const MONTHS=[{key:"2026-04",label:"April"},{key:"2026-05",label:"May"},{key:"2026-06",label:"June"},{key:"2026-07",label:"July"},{key:"2026-08",label:"August"},{key:"2026-09",label:"September"}];
+const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOWS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+// --- PIN / Admin ---
+const ADMIN_PIN = "1234";
+let isUnlocked = false;
+
+function checkPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === ADMIN_PIN) {
+    isUnlocked = true;
+    document.getElementById('admin-gate').style.display = 'none';
+    document.getElementById('beo-form-area').style.display = 'block';
+    sessionStorage.setItem('bob_admin', '1');
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function lockBEO() {
+  isUnlocked = false;
+  sessionStorage.removeItem('bob_admin');
+  document.getElementById('admin-gate').style.display = '';
+  document.getElementById('beo-form-area').style.display = 'none';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+}
+
+document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+
+if (sessionStorage.getItem('bob_admin') === '1') {
+  isUnlocked = true;
+  document.getElementById('admin-gate').style.display = 'none';
+  document.getElementById('beo-form-area').style.display = 'block';
+}
+
+// --- Helpers ---
+function isBMC(ev) { return ev.notes && ev.notes.toLowerCase().includes('bmc'); }
+function evClass(ev) { return ev.type==='Event'?'event':isBMC(ev)?'bmc':'music'; }
+
+// --- Nav ---
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+    link.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(link.dataset.section).classList.add('active');
+  });
+});
+
+// --- Event Card ---
+function card(ev) {
+  const d = new Date(ev.date+'T12:00:00');
+  const cls = evClass(ev);
+  const tagLabel = ev.type==='Event'?'Private Event':isBMC(ev)?'BMC':'Live Music';
+  const tagCls = ev.type==='Event'?'event-tag':isBMC(ev)?'bmc-tag':'music-tag';
+  let notes = '';
+  if (ev.notes && !isBMC(ev)) {
+    const tent = ev.notes.includes('TENTATIVE');
+    notes = `<div class="event-notes ${tent?'tentative':''}">${ev.notes}</div>`;
+  }
+  return `<div class="event-card" onclick="showModal('${ev.date}','${ev.name.replace(/'/g,"\\'")}')">
+    <div class="date-badge">
+      <span class="month-label">${MO[d.getMonth()]}</span>
+      <span class="day-label">${d.getDate()}</span>
+      <span class="dow-label">${ev.dow.slice(0,3)}</span>
+    </div>
+    <div class="event-info">
+      <h3 class="${ev.type==='Event'?'private':''}">${ev.name}</h3>
+      <div class="time-label">${ev.time}</div>
+      <span class="tag ${tagCls}">${tagLabel}</span>
+      ${notes}
+    </div>
+  </div>`;
+}
+
+// --- Dashboard ---
+function renderDashboard() {
+  const today = new Date().toISOString().slice(0,10);
+  const up = EVENTS.filter(e=>e.date>=today).slice(0,6);
+  document.getElementById('next-events').innerHTML = up.length
+    ? up.map(card).join('')
+    : '<p style="color:var(--text-muted)">Season complete. See you next year!</p>';
+}
+
+// --- Calendar ---
+let curMonth = "2026-05";
+
+function renderCal(mk) {
+  curMonth = mk;
+  const [yr,mo] = mk.split('-').map(Number);
+  const first = new Date(yr,mo-1,1);
+  const last = new Date(yr,mo,0);
+  const startDow = first.getDay();
+  const days = last.getDate();
+  const today = new Date().toISOString().slice(0,10);
+  const mevs = EVENTS.filter(e=>e.date.startsWith(mk));
+
+  document.querySelectorAll('.month-pill').forEach(b => b.classList.toggle('active', b.dataset.month===mk));
+
+  let h = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-header">${d}</div>`).join('');
+  for (let i=0;i<startDow;i++) h+='<div class="cal-day empty"></div>';
+  for (let day=1;day<=days;day++) {
+    const ds = `${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday = ds===today;
+    const devs = mevs.filter(e=>e.date===ds);
+    const evH = devs.map(ev=>`<div class="cal-event ${evClass(ev)}" onclick="showModal('${ev.date}','${ev.name.replace(/'/g,"\\'")}')">
+      ${ev.name.length>20?ev.name.slice(0,18)+'...':ev.name}</div>`).join('');
+    h+=`<div class="cal-day${isToday?' today':''}"><div class="day-num">${day}</div>${evH}</div>`;
+  }
+  const rem=(startDow+days)%7;
+  if(rem>0) for(let i=0;i<7-rem;i++) h+='<div class="cal-day empty"></div>';
+  document.getElementById('cal-grid').innerHTML=h;
+}
+
+function initMonthNav() {
+  document.getElementById('month-nav').innerHTML = MONTHS.map(m=>
+    `<button class="month-pill" data-month="${m.key}" onclick="renderCal('${m.key}')">${m.label}</button>`).join('');
+  const today = new Date().toISOString().slice(0,7);
+  const match = MONTHS.find(m=>m.key===today);
+  renderCal(match?match.key:MONTHS[0].key);
+}
+
+// --- All Events ---
+function renderAll(filter) {
+  document.querySelectorAll('.pill').forEach(b=>b.classList.toggle('active',b.dataset.filter===filter));
+  let f = EVENTS;
+  if(filter==='music') f=EVENTS.filter(e=>e.type==='Music'&&!isBMC(e));
+  else if(filter==='event') f=EVENTS.filter(e=>e.type==='Event');
+  else if(filter==='bmc') f=EVENTS.filter(e=>isBMC(e));
+  document.getElementById('events-list').innerHTML=f.map(card).join('');
+}
+document.querySelectorAll('.pill').forEach(b=>b.addEventListener('click',()=>renderAll(b.dataset.filter)));
+
+// --- Modal ---
+function showModal(date,name) {
+  const ev=EVENTS.find(e=>e.date===date&&e.name===name);
+  if(!ev) return;
+  document.getElementById('modal-title').textContent=ev.name;
+  let b=`<div class="modal-row"><strong>Date</strong>${MO[new Date(ev.date+'T12:00:00').getMonth()]} ${new Date(ev.date+'T12:00:00').getDate()}, ${ev.dow}</div>
+    <div class="modal-row"><strong>Time</strong>${ev.time}</div>
+    <div class="modal-row"><strong>Type</strong>${ev.type}${isBMC(ev)?' (BMC)':''}</div>`;
+  if(ev.notes&&ev.notes!=='BMC') b+=`<div class="modal-row"><strong>Notes</strong>${ev.notes}</div>`;
+  if(ev.type==='Event') b+=`<div style="margin-top:1.2rem;"><button class="btn btn-primary" onclick="prefillBEO('${ev.date}','${ev.name.replace(/'/g,"\\'")}')">Create BEO</button></div>`;
+  document.getElementById('modal-body').innerHTML=b;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// --- BEO ---
+function addMenuRow(){
+  const tb=document.getElementById('beo-menu-body');
+  const n=tb.rows.length+1;
+  const r=tb.insertRow();
+  r.innerHTML=`<td>${n}</td><td><input type="text"></td><td><input type="number" min="0"></td><td><input type="text"></td><td><input type="text"></td>`;
+}
+function addTimelineRow(){
+  const tb=document.getElementById('beo-timeline-body');
+  const r=tb.insertRow();
+  r.innerHTML=`<td><input type="time"></td><td><input type="text"></td>`;
+}
+function initBEO(){
+  for(let i=0;i<8;i++) addMenuRow();
+  [["","Staff arrives / setup begins"],["","Guest arrival"],["","Appetizers served"],["","Entrees served"],["","Dessert / cake"],["","Event concludes"],["","Breakdown / cleanup"]].forEach(([t,a])=>{
+    const r=document.getElementById('beo-timeline-body').insertRow();
+    r.innerHTML=`<td><input type="time" value="${t}"></td><td><input type="text" value="${a}"></td>`;
+  });
+  document.getElementById('beo-date').addEventListener('change',function(){
+    const d=new Date(this.value+'T12:00:00');
+    document.getElementById('beo-dow').value=DOWS[d.getDay()]||'';
+  });
+}
+
+function prefillBEO(date,name){
+  closeModal();
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  document.querySelector('[data-section="beo"]').classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('beo').classList.add('active');
+  if(!isUnlocked){document.getElementById('pin-input').focus();return;}
+  const ev=EVENTS.find(e=>e.date===date&&e.name===name);
+  if(!ev) return;
+  document.getElementById('beo-name').value=ev.name;
+  document.getElementById('beo-date').value=ev.date;
+  document.getElementById('beo-dow').value=DOWS[new Date(ev.date+'T12:00:00').getDay()];
+  if(ev.notes){
+    const gm=ev.notes.match(/(\d+)\s*guests?\s*\((\d+)A\/(\d+)C\)/i);
+    if(gm){document.getElementById('beo-adults').value=gm[2];document.getElementById('beo-children').value=gm[3];document.getElementById('beo-guaranteed').value=gm[1];document.getElementById('beo-expected').value=gm[1];}
+    if(ev.notes.toLowerCase().includes('patio left'))document.getElementById('beo-location').value='Patio - Left Side';
+    if(ev.notes.toLowerCase().includes('rain backup iron ivy'))document.getElementById('beo-rain').value='Iron Ivy Room';
+    if(ev.notes.toLowerCase().includes('hot lunch'))document.getElementById('beo-package').value='Hot Lunch Package';
+    const sm=ev.notes.match(/server\s+(\w+)/i);
+    if(sm)document.getElementById('beo-lead-server').value=sm[1];
+    document.getElementById('beo-notes').value=ev.notes;
+  }
+  if(ev.name.toLowerCase().includes('rehearsal'))document.getElementById('beo-type').value='Rehearsal Dinner';
+  else if(ev.name.toLowerCase().includes('bridal'))document.getElementById('beo-type').value='Bridal Shower';
+}
+
+function saveBEO(){
+  const data={};
+  document.querySelectorAll('#beo-form-area input,#beo-form-area select,#beo-form-area textarea').forEach(el=>{if(el.id)data[el.id]=el.value;});
+  const mr=[];document.querySelectorAll('#beo-menu-body tr').forEach(r=>{const ins=r.querySelectorAll('input');mr.push([...ins].map(i=>i.value));});data._menuRows=mr;
+  const tr=[];document.querySelectorAll('#beo-timeline-body tr').forEach(r=>{const ins=r.querySelectorAll('input');tr.push([...ins].map(i=>i.value));});data._timelineRows=tr;
+  const key='beo_'+(document.getElementById('beo-name').value||'draft');
+  localStorage.setItem(key,JSON.stringify(data));
+  alert('Saved: '+key);
+}
+
+function loadBEO(){
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('beo_'));
+  if(!keys.length){alert('No saved BEOs.');return;}
+  const choice=prompt('Saved BEOs:\n'+keys.map((k,i)=>`${i+1}. ${k}`).join('\n')+'\n\nEnter number:');
+  if(!choice)return;
+  const key=keys[parseInt(choice)-1];if(!key)return;
+  const data=JSON.parse(localStorage.getItem(key));
+  Object.keys(data).forEach(id=>{if(id.startsWith('_'))return;const el=document.getElementById(id);if(el)el.value=data[id]||'';});
+  if(data._menuRows){const tb=document.getElementById('beo-menu-body');tb.innerHTML='';data._menuRows.forEach((v,i)=>{const r=tb.insertRow();r.innerHTML=`<td>${i+1}</td><td><input type="text" value="${v[0]||''}"></td><td><input type="number" value="${v[1]||''}"></td><td><input type="text" value="${v[2]||''}"></td><td><input type="text" value="${v[3]||''}"></td>`;});}
+  if(data._timelineRows){const tb=document.getElementById('beo-timeline-body');tb.innerHTML='';data._timelineRows.forEach(v=>{const r=tb.insertRow();r.innerHTML=`<td><input type="time" value="${v[0]||''}"></td><td><input type="text" value="${v[1]||''}"></td>`;});}
+}
+
+function clearBEO(){
+  if(!confirm('Clear all BEO fields?'))return;
+  document.querySelectorAll('#beo-form-area input,#beo-form-area select,#beo-form-area textarea').forEach(el=>{if(el.type!=='button')el.value='';});
+}
+
+// --- Init ---
+renderDashboard();
+initMonthNav();
+renderAll('all');
+initBEO();
+</script>
+</body>
+</html>
