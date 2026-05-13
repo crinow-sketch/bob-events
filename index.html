@@ -291,11 +291,14 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
         <div class="admin-badge">&#10003; Manager Access</div>
       </div>
       <div style="display:flex;gap:0.5rem;">
-        <button class="btn btn-navy" onclick="showBEOForm()">+ New Private Event</button>
+        <button class="btn btn-navy" onclick="showMusicForm()">+ Music Event</button>
+        <button class="btn btn-primary" onclick="showBEOForm()">+ Private Event</button>
         <button class="logout-link" onclick="lockBEO()">Lock</button>
       </div>
     </div>
-    <div class="section-heading"><h2>Private Events / BEOs</h2></div>
+    <div class="section-heading"><h2>Music Events</h2></div>
+    <div class="beo-list" id="music-list"></div>
+    <div class="section-heading" style="margin-top:2rem;"><h2>Private Events / BEOs</h2></div>
     <div class="beo-list" id="beo-list"></div>
   </div>
 </div>
@@ -432,53 +435,36 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
   </div>
 </div>
 
+<!-- MUSIC FORM MODAL -->
+<div class="modal-overlay" id="music-modal">
+  <div class="modal" style="max-width:480px;">
+    <button class="close-btn" onclick="closeMusicModal()">&times;</button>
+    <div class="modal-head">
+      <h3 id="music-form-title">New Music Event</h3>
+      <div class="sub">Add a live music booking to the schedule</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="music-edit-id">
+      <div class="beo-grid">
+        <div class="beo-field full"><label>Artist / Band Name</label><input type="text" id="music-name" placeholder="e.g. Ultraviolet"></div>
+        <div class="beo-field"><label>Date</label><input type="date" id="music-date"></div>
+        <div class="beo-field"><label>Time Range</label><input type="text" id="music-time" placeholder="7pm-10pm" value="7pm-10pm"></div>
+        <div class="beo-field full" style="flex-direction:row;align-items:center;gap:0.6rem;">
+          <input type="checkbox" id="music-bmc" style="width:auto;">
+          <label for="music-bmc" style="margin:0;cursor:pointer;">BMC Concert</label>
+        </div>
+        <div class="beo-field full"><label>Notes</label><textarea id="music-notes" rows="2" placeholder="Optional notes..."></textarea></div>
+      </div>
+      <div class="beo-actions" style="border-top:none;padding-top:0;">
+        <button class="btn btn-navy" onclick="saveMusic()">Save to Schedule</button>
+        <button class="btn btn-outline" onclick="closeMusicModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-// ===== MUSIC EVENTS (static from Excel) =====
-const MUSIC=[
-{date:"2026-04-18",dow:"Saturday",name:"Ultraviolet",time:"6pm-9pm",notes:""},
-{date:"2026-04-23",dow:"Thursday",name:"Tim Britt",time:"6pm-9pm",notes:""},
-{date:"2026-04-30",dow:"Thursday",name:"Sarah Elizabeth",time:"6pm-9pm",notes:""},
-{date:"2026-05-09",dow:"Saturday",name:"The Bomb",time:"6pm-9pm",notes:""},
-{date:"2026-05-14",dow:"Thursday",name:"Eliza and the Fisher Cats",time:"6pm-9pm",notes:"TENTATIVE - may move earlier for Sabres game"},
-{date:"2026-05-16",dow:"Saturday",name:"Tim Britt",time:"6pm-9pm",notes:""},
-{date:"2026-05-21",dow:"Thursday",name:"Queen City Radio",time:"6pm-9pm",notes:""},
-{date:"2026-05-28",dow:"Thursday",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},
-{date:"2026-05-30",dow:"Saturday",name:"The Plaigerists",time:"6pm-9pm",notes:""},
-{date:"2026-06-04",dow:"Thursday",name:"Rabbit Jaw",time:"6pm-9pm",notes:""},
-{date:"2026-06-05",dow:"Friday",name:"Randle and the Late Night Scandals",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-06-06",dow:"Saturday",name:"Boys of Summer",time:"7pm-10pm",notes:""},
-{date:"2026-06-11",dow:"Thursday",name:"Diane Kallay Band",time:"7pm-10pm",notes:""},
-{date:"2026-06-13",dow:"Saturday",name:"Cami Clune and the Fringe",time:"7pm-10pm",notes:""},
-{date:"2026-06-18",dow:"Thursday",name:"Flashback",time:"7pm-10pm",notes:""},
-{date:"2026-06-19",dow:"Friday",name:"Captain Tom and the Hooligans",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-06-20",dow:"Saturday",name:"The Plaigerists",time:"6pm-9pm",notes:""},
-{date:"2026-06-25",dow:"Thursday",name:"Tommy Z",time:"7pm-10pm",notes:""},
-{date:"2026-06-27",dow:"Saturday",name:"Grosh",time:"7pm-10pm",notes:""},
-{date:"2026-07-02",dow:"Thursday",name:"Back to Barstools",time:"7pm-10pm",notes:""},
-{date:"2026-07-09",dow:"Thursday",name:"Ultraviolet",time:"7pm-10pm",notes:""},
-{date:"2026-07-10",dow:"Friday",name:"The Thurman Brothers",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-07-16",dow:"Thursday",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},
-{date:"2026-07-18",dow:"Saturday",name:"The Plaigerists",time:"6pm-9pm",notes:""},
-{date:"2026-07-23",dow:"Thursday",name:"Eliza and the Fisher Cats",time:"6pm-9pm",notes:""},
-{date:"2026-07-24",dow:"Friday",name:"Kickstart Rumble",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-07-25",dow:"Saturday",name:"Allykat",time:"7pm-10pm",notes:""},
-{date:"2026-08-08",dow:"Saturday",name:"Flashback",time:"7pm-10pm",notes:""},
-{date:"2026-08-13",dow:"Thursday",name:"Diane Kallay Band",time:"7pm-10pm",notes:""},
-{date:"2026-08-14",dow:"Friday",name:"Ten Cent Howl",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-08-15",dow:"Saturday",name:"Rabbit Jaw",time:"7pm-10pm",notes:""},
-{date:"2026-08-20",dow:"Thursday",name:"Cami Clune and the Fringe",time:"7pm-10pm",notes:""},
-{date:"2026-08-22",dow:"Saturday",name:"Boys of Summer",time:"7pm-10pm",notes:""},
-{date:"2026-08-27",dow:"Thursday",name:"Back to the Barstools",time:"7pm-10pm",notes:""},
-{date:"2026-08-28",dow:"Friday",name:"The Brass Machine (Halfway to Mardi Gras)",time:"7pm-10pm",notes:"BMC"},
-{date:"2026-08-29",dow:"Saturday",name:"Boogie Monsters",time:"7pm-10pm",notes:""},
-{date:"2026-09-03",dow:"Thursday",name:"Bad Habit Band",time:"7pm-10pm",notes:""},
-{date:"2026-09-05",dow:"Saturday",name:"Rockabilly Steve and BR 3",time:"7pm-10pm",notes:""},
-{date:"2026-09-10",dow:"Thursday",name:"Ultraviolet",time:"7pm-10pm",notes:""},
-{date:"2026-09-11",dow:"Friday",name:"BMC RAIN DATE (open)",time:"7pm-10pm",notes:"BMC rain date"},
-{date:"2026-09-18",dow:"Friday",name:"BMC RAIN DATE (open)",time:"7pm-10pm",notes:"BMC rain date"},
-{date:"2026-09-19",dow:"Saturday",name:"Grosh",time:"7pm-10pm",notes:""},
-{date:"2026-09-25",dow:"Friday",name:"The Plaigerists",time:"6pm-9pm",notes:""}
-];
+let MUSIC = [];
 
 // ===== SUPABASE CONFIG =====
 const SB_URL = 'https://cbdjoydzoiysvcleybpq.supabase.co';
@@ -525,6 +511,17 @@ function localToDb(b) {
   };
 }
 
+// ===== LOAD MUSIC from Supabase =====
+async function loadMusic() {
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/music_events?select=*&order=date', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if (r.ok) {
+      const rows = await r.json();
+      MUSIC = rows.map(row => ({id:row.id, date:row.date, dow:row.dow, name:row.name, time:row.time_range, notes:row.notes||''}));
+    }
+  } catch(e) { console.log('Music fetch failed', e); }
+}
+
 // ===== LOAD BEOs from Supabase =====
 async function loadBEOs() {
   try {
@@ -533,6 +530,68 @@ async function loadBEOs() {
   } catch(e) { console.log('DB fetch failed, using empty list', e); }
   renderAll();
 }
+
+// ===== MUSIC CRUD =====
+async function saveMusic() {
+  const gv = k => document.getElementById(k)?.value || '';
+  const name = gv('music-name');
+  const date = gv('music-date');
+  const timeRange = gv('music-time');
+  const notes = document.getElementById('music-bmc').checked ? (gv('music-notes') ? 'BMC - ' + gv('music-notes') : 'BMC') : gv('music-notes');
+  if (!name || !date) { alert('Artist name and date are required.'); return; }
+  const dow = DOWS[new Date(date+'T12:00:00').getDay()];
+  const editId = document.getElementById('music-edit-id').value;
+  const row = {name, date, dow, time_range: timeRange || '7pm-10pm', notes};
+  try {
+    if (editId) {
+      const r = await fetch(SB_URL+'/rest/v1/music_events?id=eq.'+encodeURIComponent(editId), {method:'PATCH', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(row)});
+      if (!r.ok) throw new Error('Update failed');
+    } else {
+      row.id = 'm-' + Date.now();
+      const r = await fetch(SB_URL+'/rest/v1/music_events', {method:'POST', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(row)});
+      if (!r.ok) throw new Error('Insert failed');
+    }
+    await loadMusic();
+    closeMusicModal();
+    renderAll();
+  } catch(e) { alert('Error saving music event: ' + e.message); }
+}
+
+async function deleteMusic(id) {
+  if (!confirm('Remove this music event?')) return;
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/music_events?id=eq.'+encodeURIComponent(id), {method:'DELETE', headers:sbHeaders});
+    if (!r.ok) throw new Error('Delete failed');
+    await loadMusic();
+    renderAll();
+  } catch(e) { alert('Error deleting: ' + e.message); }
+}
+
+function showMusicForm(id) {
+  const isEdit = id && MUSIC.find(m => m.id === id);
+  document.getElementById('music-form-title').textContent = isEdit ? 'Edit Music Event' : 'New Music Event';
+  if (isEdit) {
+    const m = MUSIC.find(x => x.id === id);
+    document.getElementById('music-edit-id').value = m.id;
+    document.getElementById('music-name').value = m.name;
+    document.getElementById('music-date').value = m.date;
+    document.getElementById('music-time').value = m.time;
+    const isBmc = m.notes && m.notes.toLowerCase().includes('bmc');
+    document.getElementById('music-bmc').checked = isBmc;
+    document.getElementById('music-notes').value = isBmc ? m.notes.replace(/^BMC\s*-?\s*/i, '') : (m.notes || '');
+  } else {
+    document.getElementById('music-edit-id').value = '';
+    document.getElementById('music-name').value = '';
+    document.getElementById('music-date').value = '';
+    document.getElementById('music-time').value = '7pm-10pm';
+    document.getElementById('music-bmc').checked = false;
+    document.getElementById('music-notes').value = '';
+  }
+  document.getElementById('music-modal').classList.add('open');
+}
+
+function editMusic(id) { closeModal(); showMusicForm(id); }
+function closeMusicModal() { document.getElementById('music-modal').classList.remove('open'); }
 
 // Build unified event list
 function getAllEvents() {
@@ -623,6 +682,7 @@ function renderAll() {
   renderDashboard();
   if (document.getElementById('cal-grid').innerHTML) renderCal(curMonth);
   renderEventsList(curFilter);
+  renderMusicList();
   renderBEOList();
 }
 
@@ -716,6 +776,10 @@ function showMusicDetail(date,name){
         <div class="modal-row"><strong>Date</strong><span>${MO[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${ev.dow})</span></div>
         <div class="modal-row"><strong>Time</strong><span>${ev.time}</span></div>
         ${ev.notes&&!isBmc?`<div class="modal-row"><strong>Notes</strong><span>${ev.notes}</span></div>`:''}
+      </div>
+      <div class="modal-actions">
+        ${isUnlocked&&ev.id?`<button class="btn btn-primary btn-sm" onclick="editMusic('${ev.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMusic('${ev.id}');closeModal();">Remove</button>`:''}
       </div>
     </div>`;
   document.getElementById('modal').classList.add('open');
@@ -836,6 +900,32 @@ if(sessionStorage.getItem('bob_admin')==='1'){
   isUnlocked=true;
   document.getElementById('admin-gate').style.display='none';
   document.getElementById('admin-area').style.display='block';
+}
+
+// ===== MUSIC LIST (admin) =====
+function renderMusicList(){
+  if(!isUnlocked) return;
+  const list=document.getElementById('music-list');
+  if(!list) return;
+  if(!MUSIC.length){
+    list.innerHTML='<p style="color:var(--text-muted);text-align:center;padding:1rem;">No music events yet.</p>';
+    return;
+  }
+  list.innerHTML=MUSIC.sort((a,b)=>a.date.localeCompare(b.date)).map(m=>{
+    const d=new Date(m.date+'T12:00:00');
+    const isBmc=m.notes&&m.notes.toLowerCase().includes('bmc');
+    const tag=isBmc?'<span class="beo-badge confirmed" style="background:var(--sage-pale);color:var(--sage);">BMC</span>':'';
+    return `<div class="beo-list-item" onclick="showMusicDetail('${m.date}','${m.name.replace(/'/g,"\\'")}')">
+      <div class="info">
+        <h4 style="color:var(--navy);">${m.name} ${tag}</h4>
+        <p>${MO[d.getMonth()]} ${d.getDate()} &middot; ${m.dow} &middot; ${m.time}</p>
+      </div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn btn-outline btn-sm" onclick="showMusicForm('${m.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMusic('${m.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ===== BEO LIST (admin) =====
@@ -1001,7 +1091,8 @@ document.getElementById('beo-modal').addEventListener('click',e=>{if(e.target===
 
 // ===== INIT =====
 initMonthNav();
-loadBEOs();
+document.getElementById('music-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMusicModal();});
+loadMusic().then(()=>loadBEOs());
 </script>
 </body>
 </html>
