@@ -6,6 +6,7 @@
 <title>BOB Events | Buffalo Olde Brewery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 .site-bar { background:#0D1B2A; display:flex; align-items:center; justify-content:space-between; padding:0.5rem 1.5rem; font-family:'Source Sans 3','Segoe UI',sans-serif; }
 .site-bar .site-name { color:#fff; font-weight:700; font-size:0.95rem; letter-spacing:0.5px; }
@@ -180,6 +181,21 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 .sig-line { border-bottom:1.5px solid var(--text); height:35px; margin-bottom:0.3rem; }
 
 .beo-actions { display:flex; gap:0.75rem; justify-content:center; margin-top:2rem; padding:1.5rem; border-top:1px solid var(--border); flex-wrap:wrap; }
+.notify-section { background:var(--warm-gray); border-radius:8px; padding:1rem 1.2rem; margin-top:1.5rem; }
+.notify-section h4 { font-family:'Source Sans 3',sans-serif; font-size:0.82rem; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem; }
+.notify-list { display:flex; flex-direction:column; gap:0.4rem; }
+.notify-item { display:flex; align-items:center; gap:0.6rem; font-size:0.88rem; }
+.notify-item input[type="checkbox"] { width:16px; height:16px; accent-color:var(--terracotta); cursor:pointer; }
+.notify-item label { cursor:pointer; color:var(--text); }
+.notify-item .notify-email { color:var(--text-muted); font-size:0.8rem; }
+.contact-row { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; }
+.contact-row input { flex:1; min-width:120px; padding:0.45rem 0.7rem; border:1.5px solid var(--border); border-radius:8px; font-size:0.85rem; font-family:inherit; background:var(--cream); }
+.contact-row input:focus { outline:none; border-color:var(--terracotta); }
+.contacts-list { display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1rem; }
+.contact-item { display:flex; justify-content:space-between; align-items:center; background:var(--warm-white); border:1px solid var(--border); border-radius:8px; padding:0.5rem 0.8rem; font-size:0.88rem; }
+.contact-item .contact-info { display:flex; gap:0.5rem; align-items:center; }
+.contact-item .contact-name { font-weight:600; color:var(--navy); }
+.contact-item .contact-email { color:var(--text-muted); font-size:0.82rem; }
 .btn { padding:0.65rem 1.5rem; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.2s; letter-spacing:0.3px; }
 .btn-primary { background:var(--terracotta); color:#fff; }
 .btn-primary:hover { background:var(--terra-light); }
@@ -318,6 +334,15 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <div class="beo-list" id="music-list"></div>
     <div class="section-heading" style="margin-top:2rem;"><h2>Private Events / BEOs</h2></div>
     <div class="beo-list" id="beo-list"></div>
+
+    <div class="section-heading" style="margin-top:2rem;"><h2>Email Notification List</h2></div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">Manage who gets notified when events are created or updated.</p>
+    <div class="contacts-list" id="contacts-list"></div>
+    <div class="contact-row">
+      <input type="text" id="new-contact-name" placeholder="Name">
+      <input type="email" id="new-contact-email" placeholder="Email address">
+      <button class="btn btn-outline btn-sm" onclick="addContact()">Add</button>
+    </div>
   </div>
 </div>
 
@@ -443,6 +468,10 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
           <div class="sig-block"><label>Manager Approval</label><div class="sig-line"></div><label>Date: ___________</label></div>
         </div>
       </div>
+      <div class="notify-section" id="beo-notify-section">
+        <h4>Notify Staff via Email</h4>
+        <div class="notify-list" id="beo-notify-list"></div>
+      </div>
       <div class="beo-actions">
         <button class="btn btn-navy" onclick="saveBEO()">Save &amp; Publish to Schedule</button>
         <button class="btn btn-outline" onclick="saveBEODraft()">Save as Draft</button>
@@ -472,6 +501,10 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
           <label for="music-bmc" style="margin:0;cursor:pointer;">BMC Concert</label>
         </div>
         <div class="beo-field full"><label>Notes</label><textarea id="music-notes" rows="2" placeholder="Optional notes..."></textarea></div>
+      </div>
+      <div class="notify-section" id="music-notify-section">
+        <h4>Notify Staff via Email</h4>
+        <div class="notify-list" id="music-notify-list"></div>
       </div>
       <div class="beo-actions" style="border-top:none;padding-top:0;">
         <button class="btn btn-navy" onclick="saveMusic()">Save to Schedule</button>
@@ -578,9 +611,14 @@ async function saveMusic() {
       const r = await fetch(SB_URL+'/rest/v1/music_events', {method:'POST', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(row)});
       if (!r.ok) throw new Error('Insert failed');
     }
+    const recipients = getCheckedRecipients('music-notify-list');
     await loadMusic();
     closeMusicModal();
     renderAll();
+    if (recipients.length) {
+      const d = new Date(date+'T12:00:00');
+      sendEventNotification(recipients, name, MO[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' ('+dow+')', timeRange, 'Live Music', notes);
+    }
   } catch(e) { alert('Error saving music event: ' + e.message); }
 }
 
@@ -614,6 +652,7 @@ function showMusicForm(id) {
     document.getElementById('music-bmc').checked = false;
     document.getElementById('music-notes').value = '';
   }
+  renderNotifyCheckboxes('music-notify-list');
   document.getElementById('music-modal').classList.add('open');
 }
 
@@ -714,6 +753,7 @@ function renderAll() {
   renderEventsList(curFilter);
   renderMusicList();
   renderBEOList();
+  renderContactsList();
 }
 
 function renderStats() {
@@ -1031,6 +1071,7 @@ function showBEOForm(id){
     });
     document.getElementById('beo-status').value='confirmed';
   }
+  renderNotifyCheckboxes('beo-notify-list');
   document.getElementById('beo-modal').classList.add('open');
 }
 
@@ -1083,8 +1124,14 @@ async function saveBEO(){
       : SB_URL+'/rest/v1/beos';
     const r=await fetch(url,{method:isUpdate?'PATCH':'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(dbRow)});
     if(!r.ok){const e=await r.json();throw new Error(e.message||'Save failed');}
+    const recipients = getCheckedRecipients('beo-notify-list');
     await loadBEOs();
     closeBEOModal();
+    if (recipients.length) {
+      const d = new Date(data.date+'T12:00:00');
+      const details = [data.type, data.guaranteed ? data.guaranteed+' guests' : '', data.location, data.package].filter(Boolean).join(' | ');
+      sendEventNotification(recipients, data.name, MO[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(), formatBEOTime(data), 'Private Event / BEO', details);
+    }
   } catch(e){ alert('Error saving: '+e.message); }
 }
 
@@ -1120,10 +1167,127 @@ function printBEO(){ window.print(); }
 function closeBEOModal(){document.getElementById('beo-modal').classList.remove('open');}
 document.getElementById('beo-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBEOModal();});
 
+// ===== STAFF CONTACTS & EMAIL NOTIFICATIONS =====
+let CONTACTS = [];
+const EMAILJS_SERVICE = 'default_service';
+const EMAILJS_TEMPLATE = 'template_event_notify';
+const EMAILJS_PUBLIC_KEY = ''; // SET THIS after creating EmailJS account
+
+async function loadContacts() {
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/staff_contacts?select=*&order=name', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if (r.ok) CONTACTS = await r.json();
+  } catch(e) { console.log('Contacts fetch failed', e); }
+  renderContactsList();
+}
+
+function renderContactsList() {
+  const list = document.getElementById('contacts-list');
+  if (!list) return;
+  if (!CONTACTS.length) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No contacts added yet.</p>';
+    return;
+  }
+  list.innerHTML = CONTACTS.map(c => `
+    <div class="contact-item">
+      <div class="contact-info">
+        <span class="contact-name">${c.name}</span>
+        <span class="contact-email">${c.email}</span>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeContact('${c.id}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addContact() {
+  const name = document.getElementById('new-contact-name').value.trim();
+  const email = document.getElementById('new-contact-email').value.trim();
+  if (!name || !email) { alert('Enter both name and email.'); return; }
+  const id = 'c-' + Date.now();
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/staff_contacts', {method:'POST', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify({id, name, email})});
+    if (!r.ok) throw new Error('Failed to add contact');
+    document.getElementById('new-contact-name').value = '';
+    document.getElementById('new-contact-email').value = '';
+    await loadContacts();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function removeContact(id) {
+  if (!confirm('Remove this contact?')) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/staff_contacts?id=eq.'+encodeURIComponent(id), {method:'DELETE', headers:sbHeaders});
+    await loadContacts();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function renderNotifyCheckboxes(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!CONTACTS.length) {
+    el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);">No contacts added yet. Add them in the Manage Events section.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="notify-item" style="margin-bottom:0.3rem;">
+      <input type="checkbox" id="${containerId}-all" onchange="toggleAllNotify('${containerId}', this.checked)">
+      <label for="${containerId}-all" style="font-weight:700;">Select All</label>
+    </div>` +
+    CONTACTS.map(c => `
+    <div class="notify-item">
+      <input type="checkbox" class="notify-cb" data-email="${c.email}" data-name="${c.name}" id="${containerId}-${c.id}">
+      <label for="${containerId}-${c.id}">${c.name}</label>
+      <span class="notify-email">${c.email}</span>
+    </div>`).join('');
+}
+
+function toggleAllNotify(containerId, checked) {
+  document.querySelectorAll('#' + containerId + ' .notify-cb').forEach(cb => cb.checked = checked);
+}
+
+function getCheckedRecipients(containerId) {
+  const cbs = document.querySelectorAll('#' + containerId + ' .notify-cb:checked');
+  return [...cbs].map(cb => ({email: cb.dataset.email, name: cb.dataset.name}));
+}
+
+async function sendEventNotification(recipients, eventName, eventDate, eventTime, eventType, extraDetails) {
+  if (!recipients.length) return;
+  if (!EMAILJS_PUBLIC_KEY) {
+    const emails = recipients.map(r => r.email).join(',');
+    const subject = encodeURIComponent('BOB Event: ' + eventName + ' - ' + eventDate);
+    const body = encodeURIComponent(
+      'New event at Buffalo Olde Brewery!\n\n' +
+      'Event: ' + eventName + '\n' +
+      'Date: ' + eventDate + '\n' +
+      'Time: ' + eventTime + '\n' +
+      'Type: ' + eventType + '\n' +
+      (extraDetails ? '\nDetails:\n' + extraDetails + '\n' : '') +
+      '\nView the full schedule: https://crinow-sketch.github.io/bob-events/'
+    );
+    window.open('mailto:' + emails + '?subject=' + subject + '&body=' + body, '_blank');
+    return;
+  }
+  for (const r of recipients) {
+    try {
+      await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+        to_email: r.email,
+        to_name: r.name,
+        event_name: eventName,
+        event_date: eventDate,
+        event_time: eventTime,
+        event_type: eventType,
+        extra_details: extraDetails || '',
+        site_url: 'https://crinow-sketch.github.io/bob-events/'
+      }, EMAILJS_PUBLIC_KEY);
+    } catch(e) { console.log('Email failed for ' + r.email, e); }
+  }
+  toast ? toast('Notifications sent!') : alert('Notifications sent!');
+}
+
 // ===== INIT =====
 initMonthNav();
 document.getElementById('music-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMusicModal();});
 loadMusic().then(()=>loadBEOs());
+loadContacts();
 </script>
 </body>
 </html>
