@@ -523,6 +523,35 @@ const SB_URL = 'https://cbdjoydzoiysvcleybpq.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZGpveWR6b2l5c3ZjbGV5YnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODI1MzIsImV4cCI6MjA5NDI1ODUzMn0.WajecLt1M_b1cHCyZ9j-p6CUX-Z9z-pcG3ISE8I1Fe0';
 const sbHeaders = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
+const BAND_CONTACTS = {
+  'Ultraviolet': {contact:'Amy', email:'uvbuffalo@gmail.com'},
+  'Tim Britt': {contact:'Tim', email:'timbrittlive@gmail.com'},
+  'Sarah Elizabeth': {contact:'Sarah', email:'sara@saraelizabethmusic.com'},
+  'The Bomb': {contact:'Annette', email:'nettiefa@yahoo.com'},
+  'Eliza and the Fisher Cats': {contact:'Rob', phone:'716-771-4158'},
+  'Queen City Radio': {contact:'Kaley Lynch', email:'kaley.e.lynch@gmail.com'},
+  'Rockabilly Steve and BR 3': {contact:'Steve', email:'damnhippiejl@aol.com'},
+  'The Plaigerists': {contact:'Zach', email:'theplagiaristsband@gmail.com'},
+  'Rabbit Jaw': {contact:'Erin', email:'Ebahn3@yahoo.com'},
+  'Randle and the Late Night Scandals': {contact:'BMC'},
+  'Boys of Summer': {contact:'Gary', email:'bos91@me.com'},
+  'Diane Kallay Band': {contact:'Diane', phone:'716-909-2646'},
+  'Cami Clune and the Fringe': {contact:'Patty', email:'camicluneofficial@gmail.com'},
+  'Flashback': {contact:'Dennis', email:'dennis@bischoflawfirm.com'},
+  'Captain Tom and the Hooligans': {contact:'BMC'},
+  'Tommy Z': {contact:'Tommy', email:'tommyzbuff@gmail.com'},
+  'Grosh': {contact:'Grace', email:'groshband@gmail.com'},
+  'Back to Barstools': {contact:'Dave', email:'mendola@equityta.com'},
+  'Back to the Barstools': {contact:'Dave', email:'mendola@equityta.com'},
+  'The Thurman Brothers': {contact:'BMC'},
+  'Kickstart Rumble': {contact:'BMC'},
+  'Allykat': {contact:'Craig', phone:'865-314-5334'},
+  'Ten Cent Howl': {contact:'BMC'},
+  'The Brass Machine (Halfway to Mardi Gras)': {contact:'BMC'},
+  'Boogie Monsters': {contact:'Patrick', email:'facebook messenger'},
+  'Bad Habit Band': {contact:null, email:'badhabitwny@gmail.com'},
+};
+
 let BEOS = [];
 
 const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -841,17 +870,37 @@ function showMusicDetail(date,name){
   if(!ev) return;
   const d=new Date(ev.date+'T12:00:00');
   const isBmc=ev.notes&&ev.notes.toLowerCase().includes('bmc');
+  const bc=BAND_CONTACTS[ev.name]||{};
+
+  let detailRows=`
+    <div class="modal-row"><strong>Date</strong><span>${MO[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${ev.dow})</span></div>
+    <div class="modal-row"><strong>Time</strong><span>${ev.time}</span></div>`;
+  if(ev.notes&&!isBmc) detailRows+=`<div class="modal-row"><strong>Notes</strong><span>${ev.notes}</span></div>`;
+
+  let costSection='';
+  if(ev.cost){
+    costSection=`<div class="modal-section"><div class="modal-section-title">Cost</div>
+      <div class="modal-row"><strong>Band Fee</strong><span style="font-weight:700;color:var(--terracotta);">$${Number(ev.cost).toLocaleString()}</span></div>
+    </div>`;
+  }
+
+  let contactSection='';
+  const cRows=[];
+  if(bc.contact) cRows.push(`<div class="modal-row"><strong>Contact</strong><span>${bc.contact}</span></div>`);
+  if(bc.email&&bc.email!=='BMC'&&bc.email!=='facebook messenger') cRows.push(`<div class="modal-row"><strong>Email</strong><span><a href="mailto:${bc.email}" style="color:var(--navy);text-decoration:underline;">${bc.email}</a></span></div>`);
+  if(bc.email==='facebook messenger') cRows.push(`<div class="modal-row"><strong>Contact Via</strong><span>Facebook Messenger</span></div>`);
+  if(bc.phone) cRows.push(`<div class="modal-row"><strong>Phone</strong><span><a href="tel:${bc.phone.replace(/[^0-9]/g,'')}" style="color:var(--navy);text-decoration:underline;">${bc.phone}</a></span></div>`);
+  if(cRows.length) contactSection=`<div class="modal-section"><div class="modal-section-title">Contact Info</div>${cRows.join('')}</div>`;
+
   document.getElementById('modal-content').innerHTML=`
     <div class="modal-head">
       <h3>${ev.name}</h3>
       <div class="sub">${isBmc?'BMC Concert':'Live Music'}</div>
     </div>
     <div class="modal-body">
-      <div class="modal-section">
-        <div class="modal-row"><strong>Date</strong><span>${MO[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${ev.dow})</span></div>
-        <div class="modal-row"><strong>Time</strong><span>${ev.time}</span></div>
-        ${ev.notes&&!isBmc?`<div class="modal-row"><strong>Notes</strong><span>${ev.notes}</span></div>`:''}
-      </div>
+      <div class="modal-section">${detailRows}</div>
+      ${costSection}
+      ${contactSection}
       <div class="modal-actions">
         ${isUnlocked&&ev.id?`<button class="btn btn-primary btn-sm" onclick="editMusic('${ev.id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMusic('${ev.id}');closeModal();">Remove</button>`:''}
