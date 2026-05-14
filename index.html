@@ -1286,8 +1286,7 @@ async function sendEventNotification(recipients, eventName, eventDate, eventTime
 // ===== INIT =====
 initMonthNav();
 document.getElementById('music-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMusicModal();});
-loadContacts();
-loadMusic().then(()=>loadBEOs());
+Promise.all([loadContacts(), loadMusic()]).then(()=>loadBEOs());
 </script>
 </body>
 </html>
