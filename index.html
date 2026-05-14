@@ -496,7 +496,8 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
         <div class="beo-field full"><label>Artist / Band Name</label><input type="text" id="music-name" placeholder="e.g. Ultraviolet"></div>
         <div class="beo-field"><label>Date</label><input type="date" id="music-date"></div>
         <div class="beo-field"><label>Time Range</label><input type="text" id="music-time" placeholder="7pm-10pm" value="7pm-10pm"></div>
-        <div class="beo-field full" style="flex-direction:row;align-items:center;gap:0.6rem;">
+        <div class="beo-field"><label>Cost</label><input type="text" id="music-cost" placeholder="$"></div>
+        <div class="beo-field" style="flex-direction:row;align-items:center;gap:0.6rem;padding-top:1.5rem;">
           <input type="checkbox" id="music-bmc" style="width:auto;">
           <label for="music-bmc" style="margin:0;cursor:pointer;">BMC Concert</label>
         </div>
@@ -577,7 +578,7 @@ async function loadMusic() {
     const r = await fetch(SB_URL+'/rest/v1/music_events?select=*&order=date', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
     if (r.ok) {
       const rows = await r.json();
-      MUSIC = rows.map(row => ({id:row.id, date:row.date, dow:row.dow, name:row.name, time:row.time_range, notes:row.notes||''}));
+      MUSIC = rows.map(row => ({id:row.id, date:row.date, dow:row.dow, name:row.name, time:row.time_range, notes:row.notes||'', cost:row.cost||''}));
     }
   } catch(e) { console.log('Music fetch failed', e); }
 }
@@ -601,7 +602,8 @@ async function saveMusic() {
   if (!name || !date) { alert('Artist name and date are required.'); return; }
   const dow = DOWS[new Date(date+'T12:00:00').getDay()];
   const editId = document.getElementById('music-edit-id').value;
-  const row = {name, date, dow, time_range: timeRange || '7pm-10pm', notes};
+  const cost = gv('music-cost');
+  const row = {name, date, dow, time_range: timeRange || '7pm-10pm', notes, cost};
   try {
     if (editId) {
       const r = await fetch(SB_URL+'/rest/v1/music_events?id=eq.'+encodeURIComponent(editId), {method:'PATCH', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(row)});
@@ -644,6 +646,7 @@ function showMusicForm(id) {
     const isBmc = m.notes && m.notes.toLowerCase().includes('bmc');
     document.getElementById('music-bmc').checked = isBmc;
     document.getElementById('music-notes').value = isBmc ? m.notes.replace(/^BMC\s*-?\s*/i, '') : (m.notes || '');
+    document.getElementById('music-cost').value = m.cost || '';
   } else {
     document.getElementById('music-edit-id').value = '';
     document.getElementById('music-name').value = '';
@@ -651,6 +654,7 @@ function showMusicForm(id) {
     document.getElementById('music-time').value = '7pm-10pm';
     document.getElementById('music-bmc').checked = false;
     document.getElementById('music-notes').value = '';
+    document.getElementById('music-cost').value = '';
   }
   renderNotifyCheckboxes('music-notify-list');
   document.getElementById('music-modal').classList.add('open');
