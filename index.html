@@ -327,6 +327,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
       <div style="display:flex;gap:0.5rem;">
         <button class="btn btn-navy" onclick="showMusicForm()">+ Music Event</button>
         <button class="btn btn-primary" onclick="showBEOForm()">+ Private Event</button>
+        <button class="btn btn-outline btn-sm" onclick="exportJSON()" title="Download all event data as JSON">&#x2B07; Export JSON</button>
         <button class="logout-link" onclick="lockBEO()">Lock</button>
       </div>
     </div>
@@ -1011,6 +1012,25 @@ function checkPin(){
     document.getElementById('pin-input').focus();
   }
 }
+function exportJSON(){
+  const data = {
+    exported: new Date().toISOString(),
+    music_events: MUSIC.map(m => {
+      const bc = BAND_CONTACTS[m.name] || {};
+      return {...m, contact: bc.contact||'', email: bc.email||'', phone: bc.phone||''};
+    }),
+    private_events: BEOS,
+    staff_contacts: CONTACTS
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bob-events-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function lockBEO(){
   isUnlocked=false;
   sessionStorage.removeItem('bob_admin');
