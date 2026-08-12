@@ -4,9 +4,6 @@ SB_URL = "https://cbdjoydzoiysvcleybpq.supabase.co/rest/v1/music_events"
 SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZGpveWR6b2l5c3ZjbGV5YnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODI1MzIsImV4cCI6MjA5NDI1ODUzMn0.WajecLt1M_b1cHCyZ9j-p6CUX-Z9z-pcG3ISE8I1Fe0"
 
 games = [
-    {"id":"bills-pre1","name":"Bills vs Panthers","date":"2026-08-15","dow":"Saturday","time_range":"1pm","notes":"Preseason Week 1 | Home - Highmark Stadium"},
-    {"id":"bills-pre2","name":"Bills at Browns","date":"2026-08-22","dow":"Saturday","time_range":"1pm","notes":"Preseason Week 2 | Away - Huntington Bank Field"},
-    {"id":"bills-pre3","name":"Bills vs Steelers","date":"2026-08-27","dow":"Thursday","time_range":"7pm","notes":"Preseason Week 3 | Home - Highmark Stadium"},
     {"id":"bills-w1","name":"Bills at Texans","date":"2026-09-13","dow":"Sunday","time_range":"1pm","notes":"Week 1 | Away - NRG Stadium"},
     {"id":"bills-w2","name":"Bills vs Lions","date":"2026-09-17","dow":"Thursday","time_range":"8:15pm","notes":"Week 2 | HOME OPENER - Highmark Stadium | Thursday Night Football"},
     {"id":"bills-w3","name":"Bills vs Chargers","date":"2026-09-27","dow":"Sunday","time_range":"1pm","notes":"Week 3 | Home - Highmark Stadium"},
