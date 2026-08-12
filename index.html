@@ -105,6 +105,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 .cal-event.event { background:var(--terracotta); color:#fff; }
 .cal-event.bmc { background:var(--sage); color:#fff; }
 .cal-event.sabres { background:#003087; color:#FFB81C; font-weight:700; }
+.cal-event.bills { background:#C60C30; color:#fff; font-weight:700; }
 .cal-legend { display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:2rem; }
 .cal-legend span { display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--text-muted); }
 .cal-legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
@@ -126,6 +127,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 .tag.event-tag { background:var(--terra-pale); color:var(--terracotta); }
 .tag.bmc-tag { background:var(--sage-pale); color:var(--sage); }
 .tag.sabres-tag { background:#003087; color:#FFB81C; }
+.tag.bills-tag { background:#C60C30; color:#fff; }
 .event-notes { font-size:0.82rem; color:var(--text-light); margin-top:0.4rem; padding-top:0.4rem; border-top:1px dashed var(--border); }
 .event-notes.tentative { color:var(--terracotta); font-weight:600; }
 
@@ -294,6 +296,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <span><i style="background:var(--terracotta)"></i> Private Event / BEO</span>
     <span><i style="background:var(--sage)"></i> BMC Concert</span>
     <span><i style="background:#003087"></i> Sabres Playoffs</span>
+    <span><i style="background:#C60C30"></i> Buffalo Bills</span>
   </div>
 </div>
 
@@ -307,6 +310,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     <button class="pill" data-filter="event">Private Events</button>
     <button class="pill" data-filter="bmc">BMC Concerts</button>
     <button class="pill" data-filter="sabres">Sabres Playoffs</button>
+    <button class="pill" data-filter="bills">Buffalo Bills</button>
   </div>
   <div id="events-list" class="events-grid"></div>
 </div>
@@ -707,6 +711,7 @@ function getAllEvents() {
     let type = 'music';
     if (m.notes && m.notes.toLowerCase().includes('bmc')) type = 'bmc';
     if (m.name && m.name.toLowerCase().includes('sabres')) type = 'sabres';
+    if (m.name && m.name.toLowerCase().includes('bills')) type = 'bills';
     return {...m, source:'music', type};
   });
   const beoEvents = BEOS.map(b => ({
@@ -754,8 +759,8 @@ document.querySelectorAll('.nav-link').forEach(link => {
 // ===== EVENT CARD =====
 function card(ev) {
   const d = new Date(ev.date+'T12:00:00');
-  const tagLabel = ev.type==='event'?'Private Event':ev.type==='bmc'?'BMC':ev.type==='sabres'?'Sabres Playoffs':'Live Music';
-  const tagCls = ev.type==='event'?'event-tag':ev.type==='bmc'?'bmc-tag':ev.type==='sabres'?'sabres-tag':'music-tag';
+  const tagLabel = ev.type==='event'?'Private Event':ev.type==='bmc'?'BMC':ev.type==='sabres'?'Sabres Playoffs':ev.type==='bills'?'Buffalo Bills':'Live Music';
+  const tagCls = ev.type==='event'?'event-tag':ev.type==='bmc'?'bmc-tag':ev.type==='sabres'?'sabres-tag':ev.type==='bills'?'bills-tag':'music-tag';
   let notes='';
   if (ev.source==='music' && ev.notes && !ev.notes.toLowerCase().includes('bmc')) {
     notes = `<div class="event-notes ${ev.notes.includes('TENTATIVE')?'tentative':''}">${ev.notes}</div>`;
@@ -869,6 +874,7 @@ function renderEventsList(filter){
   else if(filter==='event') f=f.filter(e=>e.type==='event');
   else if(filter==='bmc') f=f.filter(e=>e.type==='bmc');
   else if(filter==='sabres') f=f.filter(e=>e.type==='sabres');
+  else if(filter==='bills') f=f.filter(e=>e.type==='bills');
   document.getElementById('events-list').innerHTML=f.map(card).join('');
 }
 document.querySelectorAll('.pill').forEach(b=>b.addEventListener('click',()=>renderEventsList(b.dataset.filter)));
@@ -878,8 +884,13 @@ function showMusicDetail(date,name){
   const ev=MUSIC.find(e=>e.date===date&&e.name===name);
   if(!ev) return;
   const d=new Date(ev.date+'T12:00:00');
+  const nameLC=(ev.name||'').toLowerCase();
   const isBmc=ev.notes&&ev.notes.toLowerCase().includes('bmc');
-  const bc=BAND_CONTACTS[ev.name]||{};
+  const isSabres=nameLC.includes('sabres');
+  const isBills=nameLC.includes('bills');
+  const isGame=isSabres||isBills;
+  const subLabel=isBills?'Buffalo Bills':isSabres?'Sabres Game':isBmc?'BMC Concert':'Live Music';
+  const bc=isGame?{}:(BAND_CONTACTS[ev.name]||{});
 
   let detailRows=`
     <div class="modal-row"><strong>Date</strong><span>${MO[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${ev.dow})</span></div>
@@ -887,7 +898,7 @@ function showMusicDetail(date,name){
   if(ev.notes&&!isBmc) detailRows+=`<div class="modal-row"><strong>Notes</strong><span>${ev.notes}</span></div>`;
 
   let costSection='';
-  if(ev.cost){
+  if(ev.cost&&!isGame){
     costSection=`<div class="modal-section"><div class="modal-section-title">Cost</div>
       <div class="modal-row"><strong>Band Fee</strong><span style="font-weight:700;color:var(--terracotta);">$${Number(ev.cost).toLocaleString()}</span></div>
     </div>`;
@@ -904,7 +915,7 @@ function showMusicDetail(date,name){
   document.getElementById('modal-content').innerHTML=`
     <div class="modal-head">
       <h3>${ev.name}</h3>
-      <div class="sub">${isBmc?'BMC Concert':'Live Music'}</div>
+      <div class="sub">${subLabel}</div>
     </div>
     <div class="modal-body">
       <div class="modal-section">${detailRows}</div>
