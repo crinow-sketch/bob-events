@@ -572,9 +572,11 @@ const DOWS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturda
 function buildMonths() {
   const now = new Date();
   const months = [];
-  for (let i = -2; i < 10; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+  let d = new Date(now.getFullYear(), now.getMonth() - 2, 1);   // start 2 months back
+  const end = new Date(2027, 11, 1);                            // run through December 2027
+  while (d <= end) {
     months.push({key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: MO[d.getMonth()]+' '+d.getFullYear()});
+    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
   }
   return months;
 }
