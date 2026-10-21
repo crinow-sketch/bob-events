@@ -1,7 +1,7 @@
 {
   "name": "BOB Staff Hub",
   "short_name": "BOB",
-  "description": "Buffalo Olde Brewery - Events, Calendar & Inventory",
+  "description": "Buffalo Olde Brewery - Events & Calendar",
   "start_url": "/bob-events/",
   "display": "standalone",
   "background_color": "#1B2A4A",
