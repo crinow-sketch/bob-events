@@ -511,7 +511,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
       <div class="beo-grid">
         <div class="beo-field full"><label>Artist / Band Name</label><input type="text" id="music-name" placeholder="e.g. Ultraviolet"></div>
         <div class="beo-field"><label>Date</label><input type="date" id="music-date"></div>
-        <div class="beo-field"><label>Time Range</label><input type="text" id="music-time" placeholder="7pm-10pm" value="7pm-10pm"></div>
+        <div class="beo-field"><label>Time Range</label><input type="text" id="music-time" placeholder="6pm-9pm" value="6pm-9pm"></div>
         <div class="beo-field"><label>Cost</label><input type="text" id="music-cost" placeholder="$"></div>
         <div class="beo-field" style="flex-direction:row;align-items:center;gap:0.6rem;padding-top:1.5rem;">
           <input type="checkbox" id="music-bmc" style="width:auto;">
@@ -650,7 +650,7 @@ async function saveMusic() {
   const dow = DOWS[new Date(date+'T12:00:00').getDay()];
   const editId = document.getElementById('music-edit-id').value;
   const cost = gv('music-cost');
-  const row = {name, date, dow, time_range: timeRange || '7pm-10pm', notes, cost};
+  const row = {name, date, dow, time_range: timeRange || '6pm-9pm', notes, cost};
   try {
     if (editId) {
       const r = await fetch(SB_URL+'/rest/v1/music_events?id=eq.'+encodeURIComponent(editId), {method:'PATCH', headers:{...sbHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(row)});
@@ -698,7 +698,7 @@ function showMusicForm(id) {
     document.getElementById('music-edit-id').value = '';
     document.getElementById('music-name').value = '';
     document.getElementById('music-date').value = '';
-    document.getElementById('music-time').value = '7pm-10pm';
+    document.getElementById('music-time').value = '6pm-9pm';
     document.getElementById('music-bmc').checked = false;
     document.getElementById('music-notes').value = '';
     document.getElementById('music-cost').value = '';
