@@ -294,7 +294,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
   <div class="calendar-grid" id="cal-grid"></div>
   <div class="cal-legend">
     <span><i style="background:var(--navy)"></i> Live Music</span>
-    <span><i style="background:var(--terracotta)"></i> Private Event / BEO</span>
+    <span><i style="background:var(--terracotta)"></i> Private Event</span>
     <span><i style="background:var(--sage)"></i> BMC Concert</span>
     <span><i style="background:#003087"></i> Sabres Playoffs</span>
     <span><i style="background:#C60C30"></i> Buffalo Bills</span>
@@ -348,7 +348,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
     </div>
     <div class="section-heading"><h2>Music Events</h2></div>
     <div class="beo-list" id="music-list"></div>
-    <div class="section-heading" style="margin-top:2rem;"><h2>Private Events / BEOs</h2></div>
+    <div class="section-heading" style="margin-top:2rem;"><h2>Private Events</h2></div>
     <div class="beo-list" id="beo-list"></div>
 
     <div class="section-heading" style="margin-top:2rem;"><h2>Email Notification List</h2></div>
@@ -372,116 +372,22 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
 
 <!-- BEO FORM MODAL -->
 <div class="modal-overlay" id="beo-modal">
-  <div class="modal" style="max-width:800px;">
+  <div class="modal" style="max-width:560px;">
     <button class="close-btn" onclick="closeBEOModal()">&times;</button>
     <div class="beo-wrap" style="box-shadow:none;">
       <div class="beo-header">
-        <h2 id="beo-form-title">New Banquet Event Order</h2>
-        <p>Fill out and publish to add this event to the schedule</p>
+        <h2 id="beo-form-title">New Private Event</h2>
+        <p>Save to add this event to the schedule</p>
       </div>
       <div class="beo-body">
         <input type="hidden" id="beo-id">
-
-        <div class="beo-section-title">Event Details</div>
         <div class="beo-grid">
-          <div class="beo-field"><label>Event Name</label><input type="text" id="beo-name" placeholder="e.g. Smith Rehearsal Dinner"></div>
-          <div class="beo-field"><label>Event Type</label>
-            <select id="beo-type"><option value="">Select...</option><option>Rehearsal Dinner</option><option>Bridal Shower</option><option>Birthday Party</option><option>Corporate Event</option><option>Holiday Party</option><option>Memorial / Celebration of Life</option><option>Graduation Party</option><option>Engagement Party</option><option>Baby Shower</option><option>Other</option></select>
-          </div>
-          <div class="beo-field"><label>Event Date</label><input type="date" id="beo-date"></div>
-          <div class="beo-field"><label>Status</label>
-            <select id="beo-status"><option value="confirmed">Confirmed</option><option value="tentative">Tentative</option><option value="draft">Draft</option></select>
-          </div>
-          <div class="beo-field"><label>Arrival Time</label><input type="time" id="beo-arrival"></div>
-          <div class="beo-field"><label>Event Start</label><input type="time" id="beo-start"></div>
-          <div class="beo-field"><label>Event End</label><input type="time" id="beo-end"></div>
-          <div class="beo-field"><label>Setup Time</label><input type="time" id="beo-setup"></div>
-        </div>
-
-        <div class="beo-section-title">Contact</div>
-        <div class="beo-grid">
+          <div class="beo-field full"><label>Event Name</label><input type="text" id="beo-name" placeholder="e.g. Smith Rehearsal Dinner"></div>
+          <div class="beo-field"><label>Date</label><input type="date" id="beo-date"></div>
+          <div class="beo-field"><label>Start Time</label><input type="time" id="beo-start"></div>
           <div class="beo-field"><label>Contact Name</label><input type="text" id="beo-contact"></div>
           <div class="beo-field"><label>Phone</label><input type="tel" id="beo-phone"></div>
           <div class="beo-field full"><label>Email</label><input type="email" id="beo-email"></div>
-        </div>
-
-        <div class="beo-section-title">Guest Count</div>
-        <div class="beo-grid">
-          <div class="beo-field"><label>Adults</label><input type="number" id="beo-adults" min="0"></div>
-          <div class="beo-field"><label>Children</label><input type="number" id="beo-children" min="0"></div>
-          <div class="beo-field"><label>Guaranteed Count</label><input type="number" id="beo-guaranteed" min="0"></div>
-          <div class="beo-field"><label>Expected Count</label><input type="number" id="beo-expected" min="0"></div>
-        </div>
-
-        <div class="beo-section-title">Location & Setup</div>
-        <div class="beo-grid">
-          <div class="beo-field"><label>Location</label>
-            <select id="beo-location"><option value="">Select...</option><option>Patio - Full</option><option>Patio - Left Side</option><option>Patio - Right Side</option><option>Indoor Dining Room</option><option>Iron Ivy Room</option><option>Full Buyout</option><option>Other</option></select>
-          </div>
-          <div class="beo-field"><label>Rain Backup</label>
-            <select id="beo-rain"><option value="">Select...</option><option>Iron Ivy Room</option><option>Indoor Dining Room</option><option>Tent (if available)</option><option>N/A (indoor)</option><option>Other</option></select>
-          </div>
-          <div class="beo-field"><label>Table Setup</label>
-            <select id="beo-table-setup"><option value="">Select...</option><option>Rounds</option><option>Long Tables / Family Style</option><option>Mixed</option><option>Cocktail / Standing</option><option>U-Shape</option><option>Custom</option></select>
-          </div>
-          <div class="beo-field"><label>Seating</label>
-            <select id="beo-seating"><option value="">Select...</option><option>Assigned Seats</option><option>Open Seating</option><option>Mixed</option></select>
-          </div>
-          <div class="beo-field full"><label>Setup Notes</label><textarea id="beo-setup-notes" placeholder="AV, decor, special arrangements..."></textarea></div>
-        </div>
-
-        <div class="beo-section-title">Food & Beverage</div>
-        <div class="beo-grid">
-          <div class="beo-field"><label>Package</label>
-            <select id="beo-package"><option value="">Select...</option><option>Hot Lunch Package</option><option>Cold Lunch Package</option><option>Dinner Package A</option><option>Dinner Package B</option><option>Appetizer / Cocktail</option><option>Brunch Package</option><option>Custom Menu</option></select>
-          </div>
-          <div class="beo-field"><label>Price Per Person</label><input type="text" id="beo-ppp" placeholder="$"></div>
-          <div class="beo-field"><label>Bar Service</label>
-            <select id="beo-bar"><option value="">Select...</option><option>Open Bar - Full</option><option>Open Bar - Beer & Wine</option><option>Cash Bar</option><option>Consumption Tab</option><option>Hosted Bar with Limit</option><option>No Alcohol</option></select>
-          </div>
-          <div class="beo-field"><label>Bar Budget</label><input type="text" id="beo-bar-limit" placeholder="$"></div>
-        </div>
-        <table class="beo-table"><thead><tr><th style="width:5%">#</th><th style="width:30%">Menu Item</th><th style="width:10%">Qty</th><th style="width:15%">Dietary</th><th style="width:40%">Notes</th></tr></thead><tbody id="beo-menu-body"></tbody></table>
-        <button class="btn btn-outline btn-sm" onclick="addMenuRow()">+ Add Item</button>
-        <div class="beo-field full" style="margin-top:1rem;"><label>Dietary Restrictions</label><textarea id="beo-dietary" placeholder="Allergies, vegetarian count, etc."></textarea></div>
-
-        <div class="beo-section-title">Staffing</div>
-        <div class="beo-grid">
-          <div class="beo-field"><label>Lead Server</label><input type="text" id="beo-lead-server"></div>
-          <div class="beo-field"><label>Bartender</label><input type="text" id="beo-bartender"></div>
-          <div class="beo-field"><label>Servers</label><input type="text" id="beo-servers" placeholder="Names or count"></div>
-          <div class="beo-field"><label>Busser(s)</label><input type="text" id="beo-bussers"></div>
-          <div class="beo-field"><label>Kitchen Lead</label><input type="text" id="beo-kitchen-lead"></div>
-          <div class="beo-field"><label>Manager on Duty</label><input type="text" id="beo-mod"></div>
-        </div>
-
-        <div class="beo-section-title">Event Timeline</div>
-        <table class="beo-table"><thead><tr><th style="width:20%">Time</th><th>Activity</th></tr></thead><tbody id="beo-timeline-body"></tbody></table>
-        <button class="btn btn-outline btn-sm" onclick="addTimelineRow()">+ Add Entry</button>
-
-        <div class="beo-section-title">Financial</div>
-        <div class="beo-grid">
-          <div class="beo-field"><label>Food Total</label><input type="text" id="beo-food-total" placeholder="$"></div>
-          <div class="beo-field"><label>Beverage Total</label><input type="text" id="beo-bev-total" placeholder="$"></div>
-          <div class="beo-field"><label>Room Fee</label><input type="text" id="beo-room-fee" placeholder="$"></div>
-          <div class="beo-field"><label>Service Charge</label><input type="text" id="beo-service" placeholder="$"></div>
-          <div class="beo-field"><label>Tax</label><input type="text" id="beo-tax" placeholder="$"></div>
-          <div class="beo-field"><label style="color:var(--navy);font-weight:700;">Estimated Total</label><input type="text" id="beo-total" placeholder="$" style="font-weight:700;border-color:var(--navy);"></div>
-          <div class="beo-field"><label>Deposit Required</label><input type="text" id="beo-deposit" placeholder="$"></div>
-          <div class="beo-field"><label>Deposit Status</label>
-            <select id="beo-deposit-status"><option value="">Select...</option><option>Paid in Full</option><option>Partial</option><option>Not Yet Received</option></select>
-          </div>
-        </div>
-
-        <div class="beo-section-title">Notes</div>
-        <div class="beo-grid">
-          <div class="beo-field full"><label>Internal / Staff Notes</label><textarea id="beo-notes"></textarea></div>
-          <div class="beo-field full"><label>Client Requests</label><textarea id="beo-client-notes" placeholder="Cake delivery, entertainment, toasts..."></textarea></div>
-        </div>
-
-        <div class="sig-grid">
-          <div class="sig-block"><label>Event Coordinator</label><div class="sig-line"></div><label>Date: ___________</label></div>
-          <div class="sig-block"><label>Manager Approval</label><div class="sig-line"></div><label>Date: ___________</label></div>
         </div>
       </div>
       <div class="notify-section" id="beo-notify-section">
@@ -489,9 +395,7 @@ nav a.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
         <div class="notify-list" id="beo-notify-list"></div>
       </div>
       <div class="beo-actions">
-        <button class="btn btn-navy" onclick="saveBEO()">Save &amp; Publish to Schedule</button>
-        <button class="btn btn-outline" onclick="saveBEODraft()">Save as Draft</button>
-        <button class="btn btn-outline" onclick="printBEO()">Print</button>
+        <button class="btn btn-navy" onclick="saveBEO()">Save to Schedule</button>
         <button class="btn btn-danger" onclick="closeBEOModal()">Cancel</button>
       </div>
     </div>
@@ -734,11 +638,8 @@ function getAllEvents() {
 }
 
 function formatBEOTime(b) {
-  const parts = [];
-  if (b.arrival) parts.push('Arrival ' + fmtTime(b.arrival));
-  if (b.start) parts.push((parts.length ? '/ ' : '') + 'Start ' + fmtTime(b.start));
-  if (!parts.length && b.start) return fmtTime(b.start);
-  return parts.join(' ') || 'Time TBD';
+  const t = b.start || b.arrival;
+  return t ? fmtTime(t) : 'Time TBD';
 }
 
 function fmtTime(t) {
@@ -771,14 +672,8 @@ function card(ev) {
   if (ev.source==='music' && ev.notes && !ev.notes.toLowerCase().includes('bmc')) {
     notes = `<div class="event-notes ${ev.notes.includes('TENTATIVE')?'tentative':''}">${ev.notes}</div>`;
   }
-  if (ev.source==='beo' && ev.beo) {
-    const b = ev.beo;
-    const details = [];
-    if (b.guaranteed) details.push(b.guaranteed + ' guests');
-    if (b.location) details.push(b.location);
-    if (b.package) details.push(b.package);
-    const badge = `<span class="beo-badge ${b.status||'confirmed'}">${b.status||'confirmed'}</span>`;
-    notes = details.length ? `<div class="event-notes">${details.join(' &middot; ')} ${badge}</div>` : badge;
+  if (ev.source==='beo' && ev.beo && ev.beo.status && ev.beo.status!=='confirmed') {
+    notes = `<span class="beo-badge ${ev.beo.status}">${ev.beo.status}</span>`;
   }
   const onclick = ev.source==='beo'
     ? `showBEODetail('${ev.beo.id}')`
@@ -937,90 +832,34 @@ function showMusicDetail(date,name){
   document.getElementById('modal').classList.add('open');
 }
 
-// ===== BEO DETAIL MODAL (everyone can view) =====
+// ===== PRIVATE EVENT DETAIL MODAL (everyone can view; contact info only when unlocked) =====
 function showBEODetail(id){
   const b=BEOS.find(x=>x.id===id);
   if(!b) return;
   const d=new Date(b.date+'T12:00:00');
-  const badge=`<span class="beo-badge ${b.status||'confirmed'}">${b.status||'confirmed'}</span>`;
-
-  let timeline='';
-  if(b.timeline&&b.timeline.length){
-    timeline=`<div class="modal-section"><div class="modal-section-title">Timeline</div><table class="modal-timeline">`
-      +b.timeline.filter(t=>t.activity).map(t=>`<tr><td>${t.time?fmtTime(t.time):''}</td><td>${t.activity}</td></tr>`).join('')
-      +`</table></div>`;
-  }
-
-  let staffing='';
-  const staffFields=[['Lead Server',b.leadServer],['Bartender',b.bartender],['Servers',b.servers],['Busser(s)',b.bussers],['Kitchen Lead',b.kitchenLead],['MOD',b.mod]].filter(x=>x[1]);
-  if(staffFields.length){
-    staffing=`<div class="modal-section"><div class="modal-section-title">Staffing</div>`
-      +staffFields.map(([l,v])=>`<div class="modal-row"><strong>${l}</strong><span>${v}</span></div>`).join('')+`</div>`;
-  }
-
-  let fb='';
-  const fbFields=[['Package',b.package],['Bar',b.bar],['Dietary',b.dietary]].filter(x=>x[1]);
-  if(fbFields.length){
-    fb=`<div class="modal-section"><div class="modal-section-title">Food & Beverage</div>`
-      +fbFields.map(([l,v])=>`<div class="modal-row"><strong>${l}</strong><span>${v}</span></div>`).join('')+`</div>`;
-  }
-
-  let menuHtml='';
-  if(b.menu&&b.menu.length&&b.menu.some(m=>m[0])){
-    menuHtml=`<table class="modal-timeline" style="margin-top:0.5rem;">`
-      +b.menu.filter(m=>m[0]).map(m=>`<tr><td>${m[0]}</td><td>Qty: ${m[1]||'-'}</td><td>${m[3]||''}</td></tr>`).join('')+`</table>`;
-    fb+=menuHtml;
-  }
-
-  let notes='';
-  if(b.internalNotes||b.clientNotes){
-    notes=`<div class="modal-section"><div class="modal-section-title">Notes</div>`;
-    if(b.internalNotes) notes+=`<div class="modal-row"><strong>Staff Notes</strong><span>${b.internalNotes}</span></div>`;
-    if(b.clientNotes) notes+=`<div class="modal-row"><strong>Client</strong><span>${b.clientNotes}</span></div>`;
-    notes+=`</div>`;
-  }
-
-  let financial='';
-  if(b.total||b.deposit){
-    financial=`<div class="modal-section"><div class="modal-section-title">Financial</div>`;
-    if(b.total) financial+=`<div class="modal-row"><strong>Est. Total</strong><span style="font-weight:700;">${b.total}</span></div>`;
-    if(b.deposit) financial+=`<div class="modal-row"><strong>Deposit</strong><span>${b.deposit} (${b.depositStatus||''})</span></div>`;
-    financial+=`</div>`;
-  }
+  const contactRows=[['Contact',b.contact],['Phone',b.phone],['Email',b.email]].filter(x=>x[1]);
+  const contact=isUnlocked&&contactRows.length
+    ? `<div class="modal-section"><div class="modal-section-title">Contact</div>`
+      +contactRows.map(([l,v])=>`<div class="modal-row"><strong>${l}</strong><span>${v}</span></div>`).join('')+`</div>`
+    : '';
 
   document.getElementById('modal-content').innerHTML=`
     <div class="modal-head">
-      <h3>${b.name} ${badge}</h3>
-      <div class="sub">${b.type||'Private Event'} &middot; Banquet Event Order</div>
+      <h3>${b.name}</h3>
+      <div class="sub">Private Event</div>
     </div>
     <div class="modal-body">
       <div class="modal-section">
         <div class="modal-section-title">Event Details</div>
         <div class="modal-row"><strong>Date</strong><span>${MO[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${b.dow||DOWS[d.getDay()]})</span></div>
-        ${b.arrival?`<div class="modal-row"><strong>Arrival</strong><span>${fmtTime(b.arrival)}</span></div>`:''}
-        ${b.start?`<div class="modal-row"><strong>Start</strong><span>${fmtTime(b.start)}</span></div>`:''}
-        ${b.end?`<div class="modal-row"><strong>End</strong><span>${fmtTime(b.end)}</span></div>`:''}
+        <div class="modal-row"><strong>Start</strong><span>${formatBEOTime(b)}</span></div>
       </div>
-      <div class="modal-section">
-        <div class="modal-section-title">Guest Count</div>
-        <div class="modal-row"><strong>Adults</strong><span>${b.adults||'-'}</span></div>
-        <div class="modal-row"><strong>Children</strong><span>${b.children||'-'}</span></div>
-        <div class="modal-row"><strong>Guaranteed</strong><span style="font-weight:700;">${b.guaranteed||'-'}</span></div>
-      </div>
-      ${b.location?`<div class="modal-section"><div class="modal-section-title">Location</div>
-        <div class="modal-row"><strong>Location</strong><span>${b.location}</span></div>
-        ${b.rain?`<div class="modal-row"><strong>Rain Backup</strong><span>${b.rain}</span></div>`:''}
-        ${b.setupNotes?`<div class="modal-row"><strong>Setup</strong><span>${b.setupNotes}</span></div>`:''}</div>`:''}
-      ${fb}${staffing}${timeline}${notes}${financial}
-      <div class="modal-actions">
-        ${isUnlocked?`<button class="btn btn-primary btn-sm" onclick="editBEO('${b.id}')">Edit BEO</button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="printBEODetail()">Print</button>
-      </div>
+      ${contact}
+      ${isUnlocked?`<div class="modal-actions"><button class="btn btn-primary btn-sm" onclick="editBEO('${b.id}')">Edit</button></div>`:''}
     </div>`;
   document.getElementById('modal').classList.add('open');
 }
 
-function printBEODetail(){ window.print(); }
 
 function closeModal(){document.getElementById('modal').classList.remove('open');}
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
@@ -1104,16 +943,16 @@ function renderBEOList(){
   if(!isUnlocked) return;
   const list=document.getElementById('beo-list');
   if(!BEOS.length){
-    list.innerHTML='<p style="color:var(--text-muted);text-align:center;padding:2rem;">No private events yet. Click "+ New Private Event" to create one.</p>';
+    list.innerHTML='<p style="color:var(--text-muted);text-align:center;padding:2rem;">No private events yet. Click "+ Private Event" to add one.</p>';
     return;
   }
   list.innerHTML=BEOS.sort((a,b)=>a.date.localeCompare(b.date)).map(b=>{
     const d=new Date(b.date+'T12:00:00');
-    const badge=`<span class="beo-badge ${b.status||'confirmed'}">${b.status||'confirmed'}</span>`;
+    const badge=b.status&&b.status!=='confirmed'?`<span class="beo-badge ${b.status}">${b.status}</span>`:'';
     return `<div class="beo-list-item" onclick="showBEODetail('${b.id}')">
       <div class="info">
         <h4>${b.name} ${badge}</h4>
-        <p>${MO[d.getMonth()]} ${d.getDate()} &middot; ${b.guaranteed||'?'} guests &middot; ${b.type||'Event'}</p>
+        <p>${MO[d.getMonth()]} ${d.getDate()} &middot; ${formatBEOTime(b)}${b.contact?' &middot; '+b.contact:''}${b.phone?' &middot; '+b.phone:''}</p>
       </div>
       <div class="actions" onclick="event.stopPropagation()">
         <button class="btn btn-outline btn-sm" onclick="editBEO('${b.id}')">Edit</button>
@@ -1123,54 +962,16 @@ function renderBEOList(){
   }).join('');
 }
 
-// ===== BEO FORM =====
-function addMenuRow(){
-  const tb=document.getElementById('beo-menu-body');
-  const n=tb.rows.length+1;
-  tb.insertRow().innerHTML=`<td>${n}</td><td><input type="text"></td><td><input type="number" min="0"></td><td><input type="text"></td><td><input type="text"></td>`;
-}
-function addTimelineRow(){
-  document.getElementById('beo-timeline-body').insertRow().innerHTML=`<td><input type="time"></td><td><input type="text"></td>`;
-}
-
-function initBEOForm(){
-  document.getElementById('beo-menu-body').innerHTML='';
-  document.getElementById('beo-timeline-body').innerHTML='';
-  for(let i=0;i<6;i++) addMenuRow();
-  [["","Staff arrives / setup"],["","Guest arrival"],["","Appetizers"],["","Entrees"],["","Dessert"],["","Event concludes"],["","Cleanup"]].forEach(([t,a])=>{
-    document.getElementById('beo-timeline-body').insertRow().innerHTML=`<td><input type="time" value="${t}"></td><td><input type="text" value="${a}"></td>`;
-  });
-}
+// ===== PRIVATE EVENT FORM =====
+const BEO_FIELDS={name:'beo-name',date:'beo-date',start:'beo-start',contact:'beo-contact',phone:'beo-phone',email:'beo-email'};
 
 function showBEOForm(id){
-  const isEdit = id && BEOS.find(b=>b.id===id);
-  document.getElementById('beo-form-title').textContent = isEdit ? 'Edit Banquet Event Order' : 'New Banquet Event Order';
-  initBEOForm();
-
-  if(isEdit){
-    const b=BEOS.find(x=>x.id===id);
-    document.getElementById('beo-id').value=b.id;
-    const fields={name:'beo-name',type:'beo-type',date:'beo-date',status:'beo-status',arrival:'beo-arrival',start:'beo-start',end:'beo-end',setup:'beo-setup',contact:'beo-contact',phone:'beo-phone',email:'beo-email',adults:'beo-adults',children:'beo-children',guaranteed:'beo-guaranteed',expected:'beo-expected',location:'beo-location',rain:'beo-rain',tableSetup:'beo-table-setup',seating:'beo-seating',setupNotes:'beo-setup-notes',package:'beo-package',ppp:'beo-ppp',bar:'beo-bar',barLimit:'beo-bar-limit',dietary:'beo-dietary',leadServer:'beo-lead-server',bartender:'beo-bartender',servers:'beo-servers',bussers:'beo-bussers',kitchenLead:'beo-kitchen-lead',mod:'beo-mod',foodTotal:'beo-food-total',bevTotal:'beo-bev-total',roomFee:'beo-room-fee',serviceCharge:'beo-service',tax:'beo-tax',total:'beo-total',deposit:'beo-deposit',depositStatus:'beo-deposit-status',internalNotes:'beo-notes',clientNotes:'beo-client-notes'};
-    Object.entries(fields).forEach(([k,elId])=>{
-      const el=document.getElementById(elId);
-      if(el&&b[k]!=null) el.value=b[k];
-    });
-    if(b.menu&&b.menu.length){
-      const tb=document.getElementById('beo-menu-body');tb.innerHTML='';
-      b.menu.forEach((m,i)=>{tb.insertRow().innerHTML=`<td>${i+1}</td><td><input type="text" value="${m[0]||''}"></td><td><input type="number" value="${m[1]||''}"></td><td><input type="text" value="${m[2]||''}"></td><td><input type="text" value="${m[3]||''}"></td>`;});
-      if(b.menu.length<6) for(let i=b.menu.length;i<6;i++) addMenuRow();
-    }
-    if(b.timeline&&b.timeline.length){
-      const tb=document.getElementById('beo-timeline-body');tb.innerHTML='';
-      b.timeline.forEach(t=>{tb.insertRow().innerHTML=`<td><input type="time" value="${t.time||''}"></td><td><input type="text" value="${t.activity||''}"></td>`;});
-    }
-  } else {
-    document.getElementById('beo-id').value='';
-    document.querySelectorAll('#beo-modal .beo-field input,#beo-modal .beo-field select,#beo-modal .beo-field textarea').forEach(el=>{
-      if(el.type!=='hidden'&&el.id!=='beo-status') el.value='';
-    });
-    document.getElementById('beo-status').value='confirmed';
-  }
+  const b = id && BEOS.find(x=>x.id===id);
+  document.getElementById('beo-form-title').textContent = b ? 'Edit Private Event' : 'New Private Event';
+  document.getElementById('beo-id').value = b ? b.id : '';
+  Object.entries(BEO_FIELDS).forEach(([k,elId])=>{
+    document.getElementById(elId).value = (b && b[k]!=null) ? b[k] : '';
+  });
   renderNotifyCheckboxes('beo-notify-list');
   document.getElementById('beo-modal').classList.add('open');
 }
@@ -1180,37 +981,16 @@ function editBEO(id){
   showBEOForm(id);
 }
 
+// Older records may hold full BEO details; start from the existing record so editing doesn't wipe them.
 function collectBEOData(){
   const id=document.getElementById('beo-id').value || 'beo-'+Date.now();
-  const menu=[];
-  document.querySelectorAll('#beo-menu-body tr').forEach(r=>{
-    const ins=[...r.querySelectorAll('input')];
-    menu.push(ins.map(i=>i.value));
-  });
-  const timeline=[];
-  document.querySelectorAll('#beo-timeline-body tr').forEach(r=>{
-    const ins=[...r.querySelectorAll('input')];
-    timeline.push({time:ins[0].value,activity:ins[1].value});
-  });
+  const existing=BEOS.find(b=>b.id===id) || {menu:[],timeline:[],status:'confirmed'};
   const gv=k=>document.getElementById(k)?.value||'';
-  const d=gv('beo-date');
-  return {
-    id, name:gv('beo-name'), date:d,
-    dow: d ? DOWS[new Date(d+'T12:00:00').getDay()] : '',
-    type:gv('beo-type'), status:gv('beo-status'),
-    arrival:gv('beo-arrival'), start:gv('beo-start'), end:gv('beo-end'), setup:gv('beo-setup'),
-    contact:gv('beo-contact'), phone:gv('beo-phone'), email:gv('beo-email'),
-    adults:parseInt(gv('beo-adults'))||0, children:parseInt(gv('beo-children'))||0,
-    guaranteed:parseInt(gv('beo-guaranteed'))||0, expected:parseInt(gv('beo-expected'))||0,
-    location:gv('beo-location'), rain:gv('beo-rain'), tableSetup:gv('beo-table-setup'), seating:gv('beo-seating'), setupNotes:gv('beo-setup-notes'),
-    package:gv('beo-package'), ppp:gv('beo-ppp'), bar:gv('beo-bar'), barLimit:gv('beo-bar-limit'), menu, dietary:gv('beo-dietary'),
-    leadServer:gv('beo-lead-server'), bartender:gv('beo-bartender'), servers:gv('beo-servers'), bussers:gv('beo-bussers'), kitchenLead:gv('beo-kitchen-lead'), mod:gv('beo-mod'),
-    timeline,
-    foodTotal:gv('beo-food-total'), bevTotal:gv('beo-bev-total'), roomFee:gv('beo-room-fee'), serviceCharge:gv('beo-service'), tax:gv('beo-tax'), total:gv('beo-total'),
-    deposit:gv('beo-deposit'), depositStatus:gv('beo-deposit-status'), paymentMethod:'',
-    internalNotes:gv('beo-notes'), clientNotes:gv('beo-client-notes'),
-    lastUpdated: new Date().toISOString().slice(0,10)
-  };
+  const data={...existing, id};
+  Object.entries(BEO_FIELDS).forEach(([k,elId])=>{ data[k]=gv(elId); });
+  data.dow = data.date ? DOWS[new Date(data.date+'T12:00:00').getDay()] : '';
+  data.lastUpdated = new Date().toISOString().slice(0,10);
+  return data;
 }
 
 async function saveBEO(){
@@ -1229,28 +1009,9 @@ async function saveBEO(){
     closeBEOModal();
     if (recipients.length) {
       const d = new Date(data.date+'T12:00:00');
-      const details = [data.type, data.guaranteed ? data.guaranteed+' guests' : '', data.location, data.package].filter(Boolean).join(' | ');
-      sendEventNotification(recipients, data.name, MO[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(), formatBEOTime(data), 'Private Event / BEO', details);
+      sendEventNotification(recipients, data.name, MO[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(), formatBEOTime(data), 'Private Event', '');
     }
   } catch(e){ alert('Error saving: '+e.message); }
-}
-
-async function saveBEODraft(){
-  const data=collectBEOData();
-  data.status='draft';
-  if(!data.name){alert('Enter an event name.');return;}
-  if(!data.date) data.date='2026-01-01';
-  const dbRow=localToDb(data);
-  const isUpdate=BEOS.some(b=>b.id===data.id);
-  try {
-    const url=isUpdate
-      ? SB_URL+'/rest/v1/beos?id=eq.'+encodeURIComponent(data.id)
-      : SB_URL+'/rest/v1/beos';
-    const r=await fetch(url,{method:isUpdate?'PATCH':'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(dbRow)});
-    if(!r.ok){const e=await r.json();throw new Error(e.message||'Save failed');}
-    await loadBEOs();
-    closeBEOModal();
-  } catch(e){ alert('Error saving draft: '+e.message); }
 }
 
 async function deleteBEO(id){
@@ -1261,8 +1022,6 @@ async function deleteBEO(id){
     await loadBEOs();
   } catch(e){ alert('Error deleting: '+e.message); }
 }
-
-function printBEO(){ window.print(); }
 
 function closeBEOModal(){document.getElementById('beo-modal').classList.remove('open');}
 document.getElementById('beo-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBEOModal();});
